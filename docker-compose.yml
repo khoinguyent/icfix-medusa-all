@@ -39,6 +39,7 @@ services:
     environment:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
       REDIS_URL: "redis://redis:6379"
+      MEDUSA_ADMIN_DISABLE: "true"
     depends_on:
       - postgres
       - redis
