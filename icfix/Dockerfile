@@ -1,27 +1,25 @@
-# This file tells Docker how to build an image for your backend application.
-# It must be placed inside your 'icfix' directory.
-
-# Use an official Node.js 18 runtime as a parent image
-FROM node:18-alpine
+# Use an official Node.js v20 runtime as a parent image
+FROM node:20-alpine
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and lock file first to leverage Docker's layer caching
+# Copy package.json and package-lock.json (or yarn.lock)
 COPY package*.json ./
+COPY yarn.lock ./
 
-# Install project dependencies
-RUN npm install
+# Install dependencies using yarn
+RUN yarn install --frozen-lockfile
 
-# Copy the rest of your app's source code into the container
+# Copy the rest of your app's source code
 COPY . .
 
-# Build the Medusa application (compiles TypeScript, etc.)
-RUN npm run build
+# Build the project
+RUN yarn build
 
 # Expose the port the app runs on
 EXPOSE 9000
 
-# Define the command to run your app
-# This will run migrations and then start the server
-CMD ["sh", "-c", "npx medusa db:migrate && npx medusa start"]
+# The CMD is now handled by the command in your docker-compose.yml
+# This ensures it runs with the correct flags.
+CMD ["npx", "medusa", "start"]
