@@ -1,37 +1,30 @@
+# Node/JS artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+coverage/
+dist/
+build/
+.cache/
+.eslintcache
+.tsbuildinfo
+
+# Next.js
+.next/
+out/
+.vercel/
+
+# Env and OS
 .env
-node_modules
-*yarn-error.log
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-
-packages/**/.yarn/*
-integration-tests/**/.yarn/*
-www/**/.yarn/*
-
-packages/**/plugins/**/.medusa/
-
+.env.*
 .DS_Store
 
-.eslintcache
-
-.idea
-.turbo
-build/**
-dist/**
-**/dist
-**/stats
-.favorites.json
-.vscode
-
-**/tsconfig.tsbuildinfo
-
-# Cache File
-/packages/**/.cache
-
-.cursorignore
-**/.medusa
+# Tooling
+.turbo/
+.pnpm-store/
+.yarn/*
+.idea/
+.vscode/
