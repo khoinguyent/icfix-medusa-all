@@ -4,6 +4,7 @@
   "description": "A starter for Medusa projects.",
   "author": "Medusa (https://medusajs.com)",
   "license": "MIT",
+  "comment": "Forcing a new build to clear Vercel cache.",
   "keywords": [
     "sqlite",
     "postgres",
