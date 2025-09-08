@@ -1,13 +1,16 @@
 {
-    "redirects": [
-      {
-        "source": "/",
-        "destination": "/app",
-        "permanent": true
-      }
-    ],
-    "rewrites": [
-      { "source": "/app/(.*)", "destination": "/$1" },
-      { "source": "/(.*)", "destination": "/index.html" }
-    ]
-  }
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/app",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    { "source": "/app/(.*)",        "destination": "/$1" },
+    { "source": "/auth/:path*",     "destination": "https://${VITE_MEDUSA_BACKEND_URL}/auth/:path*" },
+    { "source": "/admin/:path*",    "destination": "https://${VITE_MEDUSA_BACKEND_URL}/admin/:path*" },
+    { "source": "/store/:path*",    "destination": "https://${VITE_MEDUSA_BACKEND_URL}/store/:path*" },
+    { "source": "/(.*)",            "destination": "/index.html" }
+  ]
+}
