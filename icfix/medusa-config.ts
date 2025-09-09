@@ -3,6 +3,9 @@ import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
 module.exports = defineConfig({
+  featureFlags: {
+    "medusa-admin-webhooks-ui": true,
+  },
   admin: {
     disable: true,
     // @ts-ignore
@@ -21,8 +24,7 @@ module.exports = defineConfig({
       "medusa-admin-draft-orders-ui": true,
       "medusa-admin-discounts-ui": true,
       "medusa-admin-gift-cards-ui": true,
-      "medusa-admin-settings-ui": true,
-      "medusa-admin-webhooks-ui": true
+      "medusa-admin-settings-ui": true
     },
   },
   plugins: [
