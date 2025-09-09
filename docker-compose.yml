@@ -58,7 +58,7 @@ services:
       - redis
     # Wait for DB, run migrations, then start
     command: >
-      sh -lc "/app/scripts/wait-for-db.sh && npx medusa migrations run && npx medusa start"
+      sh -lc "/app/scripts/wait-for-db.sh && npx medusa db:migrate && npx medusa start"
     restart: unless-stopped
 
 volumes:
