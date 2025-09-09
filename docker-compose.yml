@@ -40,6 +40,16 @@ services:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
       REDIS_URL: "redis://redis:6379"
       MEDUSA_ADMIN_DISABLE: "true"
+      # Cloudflare R2 (S3-compatible) configuration
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_REGION: ${R2_REGION}
+      R2_BUCKET: ${R2_BUCKET}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      # Public base URL used to construct returned file URLs (e.g., https://assets.example.com)
+      R2_FILE_URL: ${R2_FILE_URL}
+      # Optional key prefix inside the bucket (e.g., uploads/)
+      R2_PREFIX: ${R2_PREFIX}
     depends_on:
       - postgres
       - redis

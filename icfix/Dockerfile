@@ -4,18 +4,17 @@ FROM node:20-alpine
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock)
+# Copy package.json and package-lock.json
 COPY package*.json ./
-COPY yarn.lock ./
 
-# Install dependencies using yarn
-RUN yarn install --frozen-lockfile
+# Install dependencies using npm (uses package-lock.json)
+RUN npm ci
 
 # Copy the rest of your app's source code
 COPY . .
 
 # Build the project
-RUN yarn build
+RUN npm run build
 
 # Expose the port the app runs on
 EXPOSE 9000
