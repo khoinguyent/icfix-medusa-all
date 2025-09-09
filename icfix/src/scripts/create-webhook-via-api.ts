@@ -1,23 +1,18 @@
 /**
- * create-webhook-via-api.ts (Medusa v2)
- *
- * Registers Medusa webhooks that POST to your Next.js /api/revalidate route.
- * Auth: Secret API Key (Admin → Settings → Secret API Keys) via Basic <base64(sk_:)>.
+ * Medusa v2 — Create/Upsert Webhooks via Admin API
+ * Auth: Secret API Key (Admin → Settings → Secret API Keys), sent as Basic <base64(sk_:)>.
  *
  * Run (inside backend container):
  *   docker exec \
  *     -e MEDUSA_BACKEND_URL="http://localhost:9000" \
- *     -e ADMIN_API_KEY="sk_xxx...xxx" \
+ *     -e ADMIN_API_KEY="sk_xxx...yyy" \
  *     -e WEBHOOK_TARGET_BASE="https://<your-storefront-domain>/api/revalidate" \
- *     -e REVALIDATE_SECRET="<same-as-in-storefront-env>" \
+ *     -e REVALIDATE_SECRET="<same-as-storefront>" \
  *     icfix-backend \
  *     npx medusa exec src/scripts/create-webhook-via-api.ts
- *
- * Optional env:
- *   WEBHOOK_EVENTS="product.created,product.updated,product.deleted"
- *   WEBHOOK_HTTP_METHOD="POST"
- *   WEBHOOK_NAME_PREFIX="vercel-revalidate"
  */
+
+import type { ExecArgs } from "@medusajs/framework/types"
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
 
@@ -41,8 +36,8 @@ type ListWebhooksRes = {
 
 const MEDUSA_BACKEND_URL = (process.env.MEDUSA_BACKEND_URL || "http://localhost:9000").replace(/\/+$/, "")
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY
-const WEBHOOK_TARGET_BASE = process.env.WEBHOOK_TARGET_BASE?.replace(/\/+$/, "") || "https://icfix-medusa-all.vercel.app/api/revalidate"
-const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET || "ed81a378f205e1549695f6f74ebcbd0b1d0fd0ca8e66a1439c92531d27dbe615"
+const WEBHOOK_TARGET_BASE = process.env.WEBHOOK_TARGET_BASE?.replace(/\/+$/, "") || ""
+const REVALIDATE_SECRET = process.env.REVALIDATE_SECRET
 const WEBHOOK_HTTP_METHOD = (process.env.WEBHOOK_HTTP_METHOD || "POST").toUpperCase() as HttpMethod
 const WEBHOOK_NAME_PREFIX = process.env.WEBHOOK_NAME_PREFIX || "vercel-revalidate"
 
@@ -72,23 +67,22 @@ if (!ADMIN_API_KEY) {
   throw new Error("Missing ADMIN_API_KEY (Secret API Key). Create one in Admin → Settings → Secret API Keys.")
 }
 if (!WEBHOOK_TARGET_BASE) {
-  throw new Error("Missing WEBHOOK_TARGET_BASE (e.g., https://icfix-medusa-all.vercel.app/api/revalidate)")
+  throw new Error("Missing WEBHOOK_TARGET_BASE (e.g., https://<storefront>/api/revalidate)")
 }
 if (!REVALIDATE_SECRET) {
-  throw new Error("Missing REVALIDATE_SECRET (must match your storefront env REVALIDATE_SECRET).")
+  throw new Error("Missing REVALIDATE_SECRET (must match storefront).")
 }
 
 const BASIC = "Basic " + Buffer.from(`${ADMIN_API_KEY}:`).toString("base64")
 
-async function req<T = any>(path: string, init: RequestInit = {}): Promise<T> {
+async function req<T = any>(path: string, init: any = {}): Promise<T> {
   const url = `${MEDUSA_BACKEND_URL}${path}`
   const headers: Record<string, string> = {
     "Authorization": BASIC,
     "Content-Type": "application/json",
     ...(init.headers as Record<string, string> || {}),
   }
-
-  const res = await fetch(url, { ...init, headers })
+  const res = await fetch(url, { ...init, headers } as any)
   if (!res.ok) {
     const text = await res.text().catch(() => "")
     throw new Error(`${init.method || "GET"} ${path} -> ${res.status} ${res.statusText} ${text}`)
@@ -102,8 +96,7 @@ function buildWebhookName(event: string) {
 }
 
 function buildWebhookUrl(event: string) {
-  // Your Next route checks ?secret=...; we also append &event=<event> for visibility.
-  const u = new URL(WEBHOOK_TARGET_BASE)
+  const u = new URL(WEBHOOK_TARGET_BASE!)
   u.searchParams.set("secret", REVALIDATE_SECRET!)
   u.searchParams.set("event", event)
   return u.toString()
@@ -122,12 +115,7 @@ async function listWebhooks(): Promise<Webhook[]> {
 }
 
 async function createWebhook(name: string, url: string, events: string[]) {
-  const body = {
-    name,
-    url,
-    http_method: WEBHOOK_HTTP_METHOD,
-    events,
-  }
+  const body = { name, url, http_method: WEBHOOK_HTTP_METHOD, events }
   const data = await req<{ webhook: Webhook }>("/admin/webhooks", {
     method: "POST",
     body: JSON.stringify(body),
@@ -142,7 +130,6 @@ async function deleteWebhook(id: string) {
 async function upsertWebhookForEvent(event: string) {
   const name = buildWebhookName(event)
   const url = buildWebhookUrl(event)
-
   const existing = await listWebhooks()
 
   const exact = existing.find(
@@ -152,7 +139,6 @@ async function upsertWebhookForEvent(event: string) {
       w.http_method === WEBHOOK_HTTP_METHOD &&
       eventsEqual(w.events, [event])
   )
-
   if (exact) {
     console.log(`✔ Webhook already exists for "${event}" (id=${exact.id}) — skipping`)
     return exact
@@ -169,7 +155,7 @@ async function upsertWebhookForEvent(event: string) {
   return created
 }
 
-async function main() {
+export default async function createWebhooks({}: ExecArgs) {
   console.log("=== Medusa Admin Webhook Setup ===")
   console.log(`Backend : ${MEDUSA_BACKEND_URL}`)
   console.log(`Target  : ${WEBHOOK_TARGET_BASE}?secret=***&event=<event>`)
@@ -188,8 +174,3 @@ async function main() {
 
   console.log("Done.")
 }
-
-main().catch((e) => {
-  console.error("Fatal error:", e)
-  process.exit(1)
-})
