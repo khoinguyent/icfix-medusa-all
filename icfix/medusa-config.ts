@@ -22,6 +22,7 @@ module.exports = defineConfig({
       "medusa-admin-discounts-ui": true,
       "medusa-admin-gift-cards-ui": true,
       "medusa-admin-settings-ui": true,
+      "medusa-admin-webhooks-ui": true
     },
   },
   projectConfig: {
