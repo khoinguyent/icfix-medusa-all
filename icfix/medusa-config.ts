@@ -25,6 +25,28 @@ module.exports = defineConfig({
       "medusa-admin-webhooks-ui": true
     },
   },
+  plugins: [
+    {
+      resolve: "@lambdacurry/medusa-plugin-webhooks",
+      options: {
+        enableUI: true,
+        customSubscriptions: [
+          "product.created",
+          "product.updated",
+          "product.deleted",
+          "product-variant.created",
+          "product-variant.updated",
+          "product-variant.deleted",
+          "product-collection.created",
+          "product-collection.updated",
+          "product-collection.deleted",
+          "product-category.created",
+          "product-category.updated",
+          "product-category.deleted",
+        ],
+      },
+    },
+  ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,

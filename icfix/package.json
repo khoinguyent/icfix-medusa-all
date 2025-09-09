@@ -24,6 +24,7 @@
     "test:unit": "TEST_TYPE=unit NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit"
   },
   "dependencies": {
+    "@lambdacurry/medusa-plugin-webhooks": "2.0.0-deprecated",
     "@medusajs/admin-sdk": "2.10.1",
     "@medusajs/cli": "2.10.1",
     "@medusajs/file-s3": "2.10.1",
