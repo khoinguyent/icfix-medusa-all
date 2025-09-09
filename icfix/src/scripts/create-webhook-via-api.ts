@@ -4,7 +4,7 @@ import fetch from "node-fetch" // If missing: npm install node-fetch
 export default async function handler() {
   // --- IMPORTANT: CONFIGURE THESE VARIABLES ---
   const MEDUSA_BACKEND_URL = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000" // Inside container this is fine
-  const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "<PUT_ADMIN_API_KEY_HERE>"
+  const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "sk_b87ed5cb48efd2d8d7cc46bef67de05c0cd7401f3edf8f9907e4c1763806c75a"
 
   const VERCEL_REVALIDATE_URL = "https://icfix-medusa-storefront.vercel.app/api/revalidate"
   const REVALIDATE_SECRET = "ed81a378f205e1549695f6f74ebcbd0b1d0fd0ca8e66a1439c92531d27dbe615" // Replace with your actual secret
