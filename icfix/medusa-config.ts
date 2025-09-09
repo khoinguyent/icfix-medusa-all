@@ -5,6 +5,7 @@ loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 module.exports = defineConfig({
   admin: {
     disable: true,
+    // @ts-ignore
     features: {
       "medusa-admin-workflows-ui": true,
       "medusa-admin-tax-ui": true,
