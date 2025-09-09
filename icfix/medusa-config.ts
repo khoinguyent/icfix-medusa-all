@@ -28,14 +28,19 @@ module.exports = defineConfig({
       options: {
         providers: [
           {
-            id: "r2",
-            resolve: "medusa-file-r2",
+            id: "s3",
+            resolve: "@medusajs/file-s3",
             options: {
-              accountId: process.env.R2_ACCOUNT_ID,
-              accessKeyId: process.env.R2_ACCESS_KEY_ID,
-              secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-              bucketName: process.env.R2_BUCKET_NAME,
-              publicUrl: process.env.R2_PUBLIC_URL,
+              endpoint: process.env.R2_ENDPOINT,
+              region: process.env.R2_REGION || "auto",
+              bucket: process.env.R2_BUCKET,
+              access_key_id: process.env.R2_ACCESS_KEY_ID,
+              secret_access_key: process.env.R2_SECRET_ACCESS_KEY,
+              file_url: process.env.R2_FILE_URL,
+              prefix: process.env.R2_PREFIX || "",
+              additional_client_config: {
+                forcePathStyle: true,
+              },
             },
           },
         ],
