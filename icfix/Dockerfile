@@ -19,6 +19,5 @@ RUN npm run build
 # Expose the port the app runs on
 EXPOSE 9000
 
-# The CMD is now handled by the command in your docker-compose.yml
-# This ensures it runs with the correct flags.
-CMD ["npx", "medusa", "start"]
+# Run migrations automatically, then start the server
+CMD ["sh", "-lc", "npx medusa migrations run && npx medusa start"]
