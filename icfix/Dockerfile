@@ -8,10 +8,12 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies using npm (uses package-lock.json)
-RUN npm ci
+RUN apk add --no-cache netcat-openbsd \
+  && npm ci
 
 # Copy the rest of your app's source code
 COPY . .
+RUN chmod +x /app/scripts/wait-for-db.sh
 
 # Build the project
 RUN npm run build

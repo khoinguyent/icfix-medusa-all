@@ -40,6 +40,9 @@ services:
       DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
       REDIS_URL: "redis://redis:6379"
       MEDUSA_ADMIN_DISABLE: "true"
+      # ISR revalidation endpoint config
+      REVALIDATE_ENDPOINT: ${REVALIDATE_ENDPOINT}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
       # Cloudflare R2 (S3-compatible) configuration
       R2_ENDPOINT: ${R2_ENDPOINT}
       R2_REGION: ${R2_REGION}
@@ -53,6 +56,9 @@ services:
     depends_on:
       - postgres
       - redis
+    # Wait for DB, run migrations, then start
+    command: >
+      sh -lc "/app/scripts/wait-for-db.sh && npx medusa migrations run && npx medusa start"
     restart: unless-stopped
 
 volumes:
