@@ -5,6 +5,23 @@ loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 module.exports = defineConfig({
   admin: {
     disable: true,
+    features: {
+      "medusa-admin-workflows-ui": true,
+      "medusa-admin-tax-ui": true,
+      "medusa-admin-publishable-api-keys-ui": true,
+      "medusa-admin-stock-inventory-ui": true,
+      "medusa-admin-custom-fields-ui": true,
+      "medusa-admin-sales-channels-ui": true,
+      "medusa-admin-products-ui": true,
+      "medusa-admin-users-ui": true,
+      "medusa-admin-pricing-ui": true,
+      "medusa-admin-customer-ui": true,
+      "medusa-admin-orders-ui": true,
+      "medusa-admin-draft-orders-ui": true,
+      "medusa-admin-discounts-ui": true,
+      "medusa-admin-gift-cards-ui": true,
+      "medusa-admin-settings-ui": true,
+    },
   },
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
