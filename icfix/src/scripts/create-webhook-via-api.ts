@@ -19,7 +19,7 @@ export default async function handler() {
 
   try {
     // 1. Authenticate to get a session cookie
-    const authResponse = await fetch(`${MEDUSA_BACKEND_URL}/admin/auth`, {
+    const authResponse = await fetch(`${MEDUSA_BACKEND_URL}/auth/user/emailpass`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
