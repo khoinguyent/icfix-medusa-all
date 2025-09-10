@@ -51,6 +51,7 @@ export const listProducts = async ({
 
   const next = {
     ...(await getCacheOptions("products")),
+    tags: ["products"],
   }
 
   return sdk.client
@@ -133,4 +134,49 @@ export const listProductsWithSort = async ({
     nextPage,
     queryParams,
   }
+}
+
+/**
+ * Fetch a single product by handle with specific cache tags
+ */
+export const getProductByHandle = async ({
+  handle,
+  countryCode,
+}: {
+  handle: string
+  countryCode: string
+}): Promise<HttpTypes.StoreProduct | null> => {
+  const region = await getRegion(countryCode)
+
+  if (!region) {
+    return null
+  }
+
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
+
+  const next = {
+    ...(await getCacheOptions("products")),
+    tags: [`product:${handle}`, "products"],
+  }
+
+  const { products } = await sdk.client
+    .fetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      `/store/products`,
+      {
+        method: "GET",
+        query: {
+          handle,
+          region_id: region?.id,
+          fields:
+            "*variants.calculated_price,+variants.inventory_quantity,+metadata,+tags",
+        },
+        headers,
+        next,
+        cache: "force-cache",
+      }
+    )
+
+  return products[0] || null
 }
