@@ -7,9 +7,13 @@ import MedusaCTA from "@modules/layout/components/medusa-cta"
 
 export default async function Footer() {
   const { collections } = await listCollections({
-    fields: "*products",
+    offset: "0",
+    limit: "6",
   })
-  const productCategories = await listCategories()
+  const product_categories = await listCategories({
+    offset: 0,
+    limit: 6,
+  })
 
   return (
     <footer className="border-t border-ui-border-base w-full">
@@ -24,7 +28,7 @@ export default async function Footer() {
             </LocalizedClientLink>
           </div>
           <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3">
-            {productCategories && productCategories?.length > 0 && (
+            {product_categories && product_categories?.length > 0 && (
               <div className="flex flex-col gap-y-2">
                 <span className="txt-small-plus txt-ui-fg-base">
                   Categories
@@ -33,7 +37,7 @@ export default async function Footer() {
                   className="grid grid-cols-1 gap-2"
                   data-testid="footer-categories"
                 >
-                  {productCategories?.slice(0, 6).map((c) => {
+                  {product_categories?.slice(0, 6).map((c) => {
                     if (c.parent_category) {
                       return
                     }
@@ -133,7 +137,7 @@ export default async function Footer() {
                 </li>
                 <li>
                   <a
-                    href="https://github.com/medusajs/nextjs-starter-medusa"
+                    href="https://github.com/medusajs/b2b-starter-medusa"
                     target="_blank"
                     rel="noreferrer"
                     className="hover:text-ui-fg-base"
