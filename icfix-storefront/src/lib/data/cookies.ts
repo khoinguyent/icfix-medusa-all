@@ -1,4 +1,7 @@
+"use server"
+
 import "server-only"
+
 import { cookies as nextCookies } from "next/headers"
 
 export const getAuthHeaders = async (): Promise<
@@ -8,12 +11,12 @@ export const getAuthHeaders = async (): Promise<
     const cookies = await nextCookies()
     const token = cookies.get("_medusa_jwt")?.value
 
-    if (!token) {
-      return {}
+    if (token) {
+      return { authorization: `Bearer ${token}` }
     }
 
-    return { authorization: `Bearer ${token}` }
-  } catch {
+    return {}
+  } catch (error) {
     return {}
   }
 }
@@ -51,6 +54,7 @@ export const getCacheOptions = async (
 
 export const setAuthToken = async (token: string) => {
   const cookies = await nextCookies()
+
   cookies.set("_medusa_jwt", token, {
     maxAge: 60 * 60 * 24 * 7,
     httpOnly: true,
@@ -61,18 +65,19 @@ export const setAuthToken = async (token: string) => {
 
 export const removeAuthToken = async () => {
   const cookies = await nextCookies()
-  cookies.set("_medusa_jwt", "", {
-    maxAge: -1,
-  })
+
+  cookies.delete("_medusa_jwt")
 }
 
 export const getCartId = async () => {
   const cookies = await nextCookies()
+
   return cookies.get("_medusa_cart_id")?.value
 }
 
 export const setCartId = async (cartId: string) => {
   const cookies = await nextCookies()
+
   cookies.set("_medusa_cart_id", cartId, {
     maxAge: 60 * 60 * 24 * 7,
     httpOnly: true,
@@ -83,6 +88,7 @@ export const setCartId = async (cartId: string) => {
 
 export const removeCartId = async () => {
   const cookies = await nextCookies()
+
   cookies.set("_medusa_cart_id", "", {
     maxAge: -1,
   })

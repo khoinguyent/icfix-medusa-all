@@ -1,123 +1,29 @@
 "use client"
 
-import { convertToLocale } from "@lib/util/money"
 import { CheckCircleSolid, XMark } from "@medusajs/icons"
-import {
-  HttpTypes,
-  StoreCart,
-  StoreCartShippingOption,
-  StorePrice,
-} from "@medusajs/types"
+import { StoreCart, StorePrice } from "@medusajs/types"
 import { Button, clx } from "@medusajs/ui"
+import { formatAmount } from "@modules/common/components/amount-cell"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { StoreFreeShippingPrice } from "@types/shipping-option/http"
 import { useState } from "react"
-import { StoreFreeShippingPrice } from "types/global"
 
-const computeTarget = (
-  cart: HttpTypes.StoreCart,
-  price: HttpTypes.StorePrice
-) => {
-  const priceRule = (price.price_rules || []).find(
-    (pr) => pr.attribute === "item_total"
-  )!
-
-  const currentAmount = cart.item_total
-  const targetAmount = parseFloat(priceRule.value)
-
-  if (priceRule.operator === "gt") {
-    return {
-      current_amount: currentAmount,
-      target_amount: targetAmount,
-      target_reached: currentAmount > targetAmount,
-      target_remaining:
-        currentAmount > targetAmount ? 0 : targetAmount + 1 - currentAmount,
-      remaining_percentage: (currentAmount / targetAmount) * 100,
-    }
-  } else if (priceRule.operator === "gte") {
-    return {
-      current_amount: currentAmount,
-      target_amount: targetAmount,
-      target_reached: currentAmount > targetAmount,
-      target_remaining:
-        currentAmount > targetAmount ? 0 : targetAmount - currentAmount,
-      remaining_percentage: (currentAmount / targetAmount) * 100,
-    }
-  } else if (priceRule.operator === "lt") {
-    return {
-      current_amount: currentAmount,
-      target_amount: targetAmount,
-      target_reached: targetAmount > currentAmount,
-      target_remaining:
-        targetAmount > currentAmount ? 0 : currentAmount + 1 - targetAmount,
-      remaining_percentage: (currentAmount / targetAmount) * 100,
-    }
-  } else if (priceRule.operator === "lte") {
-    return {
-      current_amount: currentAmount,
-      target_amount: targetAmount,
-      target_reached: targetAmount > currentAmount,
-      target_remaining:
-        targetAmount > currentAmount ? 0 : currentAmount - targetAmount,
-      remaining_percentage: (currentAmount / targetAmount) * 100,
-    }
-  } else {
-    return {
-      current_amount: currentAmount,
-      target_amount: targetAmount,
-      target_reached: currentAmount === targetAmount,
-      target_remaining:
-        targetAmount > currentAmount ? 0 : targetAmount - currentAmount,
-      remaining_percentage: (currentAmount / targetAmount) * 100,
-    }
-  }
-}
-
-export default function ShippingPriceNudge({
+export default function FreeShippingPriceNudge({
   variant = "inline",
   cart,
-  shippingOptions,
+  freeShippingPrices,
 }: {
   variant?: "popup" | "inline"
   cart: StoreCart
-  shippingOptions: StoreCartShippingOption[]
+  freeShippingPrices: StoreFreeShippingPrice[]
 }) {
-  if (!cart || !shippingOptions?.length) {
+  if (!cart || !freeShippingPrices?.length) {
     return
   }
 
-  // Check if any shipping options have a conditional price based on item_total
-  const freeShippingPrice = shippingOptions
-    .map((shippingOption) => {
-      const calculatedPrice = shippingOption.calculated_price
-
-      if (!calculatedPrice) {
-        return
-      }
-
-      // Get all prices that are:
-      // 1. Currency code is same as the cart's
-      // 2. Have a rule that is set on item_total
-      const validCurrencyPrices = shippingOption.prices.filter(
-        (price) =>
-          price.currency_code === cart.currency_code &&
-          (price.price_rules || []).some(
-            (priceRule) => priceRule.attribute === "item_total"
-          )
-      )
-
-      return validCurrencyPrices.map((price) => {
-        return {
-          ...price,
-          shipping_option_id: shippingOption.id,
-          ...computeTarget(cart, price),
-        }
-      })
-    })
-    .flat(1)
-    .filter(Boolean)
-    // We focus here entirely on free shipping, but this can be edited to handle multiple layers
-    // of reduced shipping prices.
-    .find((price) => price?.amount === 0)
+  // For the starter, we are only going to focus on a singular shipping option
+  const freeShippingPrice =
+    freeShippingPrices[0] as unknown as StoreFreeShippingPrice
 
   if (!freeShippingPrice) {
     return
@@ -163,10 +69,7 @@ function FreeShippingInline({
           >
             Only{" "}
             <span className="text-neutral-950">
-              {convertToLocale({
-                amount: price.target_remaining,
-                currency_code: cart.currency_code,
-              })}
+              {formatAmount(price.target_remaining, cart.currency_code)}
             </span>{" "}
             away
           </div>
@@ -193,14 +96,22 @@ function FreeShippingPopup({
   price,
 }: {
   cart: StoreCart
-  price: StoreFreeShippingPrice
+  price: StorePrice & {
+    target_reached: boolean
+    target_remaining: number
+    remaining_percentage: number
+  }
 }) {
   const [isClosed, setIsClosed] = useState(false)
+
+  if (cart.items?.length === 0) {
+    return
+  }
 
   return (
     <div
       className={clx(
-        "fixed bottom-5 right-5 flex flex-col items-end gap-2 transition-all duration-500 ease-in-out z-10",
+        "fixed bottom-5 right-5 flex flex-col items-end gap-2 transition-all duration-500 ease-in-out",
         {
           "opacity-0 invisible delay-1000": price.target_reached,
           "opacity-0 invisible": isClosed,
@@ -239,10 +150,7 @@ function FreeShippingPopup({
               >
                 Only{" "}
                 <span className="text-white">
-                  {convertToLocale({
-                    amount: price.target_remaining,
-                    currency_code: cart.currency_code,
-                  })}
+                  {formatAmount(price.target_remaining, cart.currency_code)}
                 </span>{" "}
                 away
               </div>
@@ -274,7 +182,7 @@ function FreeShippingPopup({
             className="flex-grow rounded-2xl bg-white text-neutral-950 shadow-none outline-none border-[1px] border-white text-[15px] py-2.5 px-4 text-center"
             href="/store"
           >
-            View products
+            View Products
           </LocalizedClientLink>
         </div>
       </div>

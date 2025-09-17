@@ -1,14 +1,27 @@
-import { Metadata } from "next"
-
+import { listRegions } from "@lib/data/regions"
 import FeaturedProducts from "@modules/home/components/featured-products"
 import Hero from "@modules/home/components/hero"
-import { listCollections } from "@lib/data/collections"
-import { getRegion } from "@lib/data/regions"
+import SkeletonFeaturedProducts from "@modules/skeletons/templates/skeleton-featured-products"
+import { Metadata } from "next"
+import { Suspense } from "react"
+
+export const dynamicParams = true
 
 export const metadata: Metadata = {
   title: "Medusa Next.js Starter Template",
   description:
-    "A performant frontend ecommerce starter template with Next.js 15 and Medusa.",
+    "A performant frontend ecommerce starter template with Next.js 14 and Medusa.",
+}
+
+export async function generateStaticParams() {
+  const countryCodes = await listRegions().then(
+    (regions) =>
+      regions
+        ?.map((r) => r.countries?.map((c) => c.iso_2))
+        .flat()
+        .filter(Boolean) as string[]
+  )
+  return countryCodes.map((countryCode) => ({ countryCode }))
 }
 
 export default async function Home(props: {
@@ -18,24 +31,12 @@ export default async function Home(props: {
 
   const { countryCode } = params
 
-  const region = await getRegion(countryCode)
-
-  const { collections } = await listCollections({
-    fields: "id, handle, title",
-  })
-
-  if (!collections || !region) {
-    return null
-  }
-
   return (
-    <>
+    <div className="flex flex-col gap-y-2 m-2">
       <Hero />
-      <div className="py-12">
-        <ul className="flex flex-col gap-x-6">
-          <FeaturedProducts collections={collections} region={region} />
-        </ul>
-      </div>
-    </>
+      <Suspense fallback={<SkeletonFeaturedProducts />}>
+        <FeaturedProducts countryCode={countryCode} />
+      </Suspense>
+    </div>
   )
 }

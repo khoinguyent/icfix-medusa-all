@@ -1,6 +1,5 @@
 import { acceptTransferRequest } from "@lib/data/orders"
 import { Heading, Text } from "@medusajs/ui"
-import TransferImage from "@modules/order/components/transfer-image"
 
 export default async function TransferPage({
   params,
@@ -13,7 +12,6 @@ export default async function TransferPage({
 
   return (
     <div className="flex flex-col gap-y-4 items-start w-2/5 mx-auto mt-10 mb-20">
-      <TransferImage />
       <div className="flex flex-col gap-y-6">
         {success && (
           <>
