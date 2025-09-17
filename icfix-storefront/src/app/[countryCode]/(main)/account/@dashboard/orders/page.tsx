@@ -4,7 +4,6 @@ import OrderOverview from "@modules/account/components/order-overview"
 import { notFound } from "next/navigation"
 import { listOrders } from "@lib/data/orders"
 import Divider from "@modules/common/components/divider"
-import TransferRequestForm from "@modules/account/components/transfer-request-form"
 
 export const metadata: Metadata = {
   title: "Orders",
@@ -29,8 +28,6 @@ export default async function Orders() {
       </div>
       <div>
         <OrderOverview orders={orders} />
-        <Divider className="my-16" />
-        <TransferRequestForm />
       </div>
     </div>
   )
