@@ -28,3 +28,4 @@ out/
 .yarn/*
 .idea/
 .vscode/
+.vercel

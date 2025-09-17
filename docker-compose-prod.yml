@@ -1,0 +1,65 @@
+# This file defines the services that will run on your server.
+# It includes the database, cache, and your Medusa backend application.
+
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database Service
+  postgres:
+    image: postgres:14-alpine
+    container_name: icfix-postgres
+    environment:
+      # These variables should be in a .env file in the same directory on your server
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - medusa-db-data:/var/lib/postgresql/data # This makes sure your database data persists
+    restart: unless-stopped
+
+  # 2. Redis Cache Service
+  redis:
+    image: redis:6.2-alpine
+    container_name: icfix-redis
+    restart: unless-stopped
+
+  # 3. Medusa Backend Service
+  medusa-backend:
+    # IMPORTANT: This image will be pulled from GHCR after being built by your GitHub Action.
+    # Replace 'YOUR_GITHUB_USERNAME' with your actual GitHub username.
+    image: ghcr.io/YOUR_GITHUB_USERNAME/icfix-backend:latest
+    container_name: icfix-backend
+    ports:
+      - "9000:9000"
+    # Load environment variables from the .env file on your server
+    env_file:
+      - .env
+    # The backend needs to know how to connect to the other services.
+    # Docker Compose makes the service names (e.g., 'postgres', 'redis') available as hostnames.
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+      REDIS_URL: "redis://redis:6379"
+      MEDUSA_ADMIN_DISABLE: "true"
+      # ISR revalidation endpoint config
+      REVALIDATE_ENDPOINT: ${REVALIDATE_ENDPOINT}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      # Cloudflare R2 (S3-compatible) configuration
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_REGION: ${R2_REGION}
+      R2_BUCKET: ${R2_BUCKET}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      # Public base URL used to construct returned file URLs (e.g., https://assets.example.com)
+      R2_FILE_URL: ${R2_FILE_URL}
+      # Optional key prefix inside the bucket (e.g., uploads/)
+      R2_PREFIX: ${R2_PREFIX}
+    depends_on:
+      - postgres
+      - redis
+    # Wait for DB, run migrations, then start
+    command: >
+      sh -lc "/app/scripts/wait-for-db.sh && npx medusa db:migrate && npx medusa start"
+    restart: unless-stopped
+
+volumes:
+  medusa-db-data: # Defines the volume for persistent database storage
