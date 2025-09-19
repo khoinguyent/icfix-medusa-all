@@ -13,7 +13,7 @@ export enum LOGIN_VIEW {
   REGISTER = "register",
 }
 
-const LoginTemplate = ({ regions }: { regions: HttpTypes.StoreRegion[] }) => {
+const LoginTemplate = () => {
   const route = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -56,7 +56,7 @@ const LoginTemplate = ({ regions }: { regions: HttpTypes.StoreRegion[] }) => {
         {currentView === LOGIN_VIEW.LOG_IN ? (
           <Login setCurrentView={updateView} />
         ) : (
-          <Register setCurrentView={updateView} regions={regions} />
+          <Register setCurrentView={updateView} />
         )}
       </div>
 

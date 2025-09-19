@@ -40,25 +40,30 @@ export const listApprovals = async ({
     ...(await getCacheOptions("approvals")),
   }
 
-  const result = await sdk.client.fetch<StoreApprovalsResponse>(
-    `/store/approvals`,
-    {
-      query: {
-        status,
-        type,
-        offset,
-        limit,
-        order,
-      },
-      method: "GET",
-      headers,
-      next,
-      credentials: "include",
-      cache: "force-cache",
-    }
-  )
-
-  return result
+  try {
+    const result = await sdk.client.fetch<StoreApprovalsResponse>(
+      `/store/approvals`,
+      {
+        query: {
+          status,
+          type,
+          offset,
+          limit,
+          order,
+        },
+        method: "GET",
+        headers,
+        next,
+        credentials: "include",
+        cache: "force-cache",
+      }
+    )
+    return result
+  } catch (error) {
+    console.warn("Could not fetch approvals, endpoint may not exist:", error)
+    // Return empty result when endpoint doesn't exist or user not authenticated
+    return { approvals: [], carts_with_approvals: [] }
+  }
 }
 
 export const retrieveApproval = async (approvalId: string) => {}

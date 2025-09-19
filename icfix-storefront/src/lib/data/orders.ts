@@ -10,6 +10,11 @@ export const retrieveOrder = async (id: string) => {
     ...(await getAuthHeaders()),
   }
 
+  // If no authentication headers, return null (user not logged in)
+  if (!headers.authorization) {
+    return null
+  }
+
   const next = {
     ...(await getCacheOptions("orders")),
   }
@@ -26,7 +31,10 @@ export const retrieveOrder = async (id: string) => {
       cache: "force-cache",
     })
     .then(({ order }) => order)
-    .catch((err) => medusaError(err))
+    .catch((err) => {
+      console.warn("Could not fetch order:", err)
+      return null
+    })
 }
 
 export const listOrders = async (
@@ -36,6 +44,11 @@ export const listOrders = async (
 ) => {
   const headers = {
     ...(await getAuthHeaders()),
+  }
+
+  // If no authentication headers, return null (user not logged in)
+  if (!headers.authorization) {
+    return null
   }
 
   const next = {
@@ -58,5 +71,8 @@ export const listOrders = async (
       cache: "force-cache",
     })
     .then(({ orders }) => orders)
-    .catch((err) => medusaError(err))
+    .catch((err) => {
+      console.warn("Could not fetch orders:", err)
+      return null
+    })
 }

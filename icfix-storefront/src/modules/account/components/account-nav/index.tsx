@@ -3,21 +3,18 @@
 import { signout } from "@lib/data/customer"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import ChevronDown from "@modules/common/icons/chevron-down"
-import FilePlus from "@modules/common/icons/file-plus"
 import MapPin from "@modules/common/icons/map-pin"
 import Package from "@modules/common/icons/package"
 import User from "@modules/common/icons/user"
 import { B2BCustomer } from "@types/global"
-import { ArrowRightOnRectangle, BuildingStorefront } from "@medusajs/icons"
+import { ArrowRightOnRectangle } from "@medusajs/icons"
 import { clx } from "@medusajs/ui"
 import { useParams, usePathname } from "next/navigation"
 
 const AccountNav = ({
   customer,
-  numPendingApprovals,
 }: {
   customer: B2BCustomer | null
-  numPendingApprovals: number
 }) => {
   const route = usePathname()
 
@@ -65,21 +62,6 @@ const AccountNav = ({
                 </li>
                 <li>
                   <LocalizedClientLink
-                    href="/account/company"
-                    className="flex items-center justify-between py-4 border-b border-gray-200 px-8"
-                    data-testid="company-link"
-                  >
-                    <>
-                      <div className="flex items-center gap-x-2">
-                        <BuildingStorefront width={20} />
-                        <span>Company</span>
-                      </div>
-                      <ChevronDown className="transform -rotate-90" />
-                    </>
-                  </LocalizedClientLink>
-                </li>
-                <li>
-                  <LocalizedClientLink
                     href="/account/addresses"
                     className="flex items-center justify-between py-4 border-b border-gray-200 px-8"
                     data-testid="addresses-link"
@@ -102,34 +84,6 @@ const AccountNav = ({
                     <div className="flex items-center gap-x-2">
                       <Package size={20} />
                       <span>Orders</span>
-                    </div>
-                    <ChevronDown className="transform -rotate-90" />
-                  </LocalizedClientLink>
-                </li>
-                {customer?.employee?.is_admin && (
-                  <li>
-                    <LocalizedClientLink
-                      href="/account/approvals"
-                      className="flex items-center justify-between py-4 border-b border-gray-200 px-8"
-                      data-testid="approvals-link"
-                    >
-                      <div className="flex items-center gap-x-2">
-                        <FilePlus size={16} />
-                        <span>Approvals</span>
-                      </div>
-                      <ChevronDown className="transform -rotate-90" />
-                    </LocalizedClientLink>
-                  </li>
-                )}
-                <li>
-                  <LocalizedClientLink
-                    href="/account/quotes"
-                    className="flex items-center justify-between py-4 border-b border-gray-200 px-8"
-                    data-testid="quotes-link"
-                  >
-                    <div className="flex items-center gap-x-2">
-                      <FilePlus size={16} />
-                      <span>Quotes</span>
                     </div>
                     <ChevronDown className="transform -rotate-90" />
                   </LocalizedClientLink>
@@ -176,15 +130,6 @@ const AccountNav = ({
             </li>
             <li>
               <AccountNavLink
-                href="/account/company"
-                route={route!}
-                data-testid="company-link"
-              >
-                Company
-              </AccountNavLink>
-            </li>
-            <li>
-              <AccountNavLink
                 href="/account/addresses"
                 route={route!}
                 data-testid="addresses-link"
@@ -199,31 +144,6 @@ const AccountNav = ({
                 data-testid="orders-link"
               >
                 Orders
-              </AccountNavLink>
-            </li>
-            {customer?.employee?.is_admin && (
-              <li>
-                <AccountNavLink
-                  href="/account/approvals"
-                  route={route!}
-                  data-testid="approvals-link"
-                >
-                  Approvals{" "}
-                  {numPendingApprovals > 0 && (
-                    <span className="bg-blue-500 text-white text-xs px-1.5 py-px rounded-full">
-                      {numPendingApprovals}
-                    </span>
-                  )}
-                </AccountNavLink>
-              </li>
-            )}
-            <li>
-              <AccountNavLink
-                href="/account/quotes"
-                route={route!}
-                data-testid="quotes-link"
-              >
-                Quotes
               </AccountNavLink>
             </li>
             <li className="text-neutral-400 hover:text-neutral-950">

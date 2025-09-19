@@ -35,9 +35,7 @@ export const retrieveCustomer = async (): Promise<B2BCustomer | null> => {
   return await sdk.client
     .fetch<{ customer: B2BCustomer }>(`/store/customers/me`, {
       method: "GET",
-      query: {
-        fields: "*employee, *orders",
-      },
+      // Some backends may not support nested fields; request defaults
       headers,
       next,
       cache: "force-cache",
@@ -69,7 +67,6 @@ export async function signup(_currentState: unknown, formData: FormData) {
     first_name: formData.get("first_name") as string,
     last_name: formData.get("last_name") as string,
     phone: formData.get("phone") as string,
-    company_name: formData.get("company_name") as string,
   }
 
   try {
@@ -80,11 +77,7 @@ export async function signup(_currentState: unknown, formData: FormData) {
 
     const customHeaders = { authorization: `Bearer ${token}` }
 
-    const { customer: createdCustomer } = await sdk.store.customer.create(
-      customerForm,
-      {},
-      customHeaders
-    )
+    await sdk.store.customer.create(customerForm, {}, customHeaders)
 
     const loginToken = await sdk.auth.login("customer", "emailpass", {
       email: customerForm.email,
@@ -93,39 +86,13 @@ export async function signup(_currentState: unknown, formData: FormData) {
 
     setAuthToken(loginToken as string)
 
-    const companyForm = {
-      name: formData.get("company_name") as string,
-      email: formData.get("email") as string,
-      phone: formData.get("company_phone") as string,
-      address: formData.get("company_address") as string,
-      city: formData.get("company_city") as string,
-      state: formData.get("company_state") as string,
-      zip: formData.get("company_zip") as string,
-      country: formData.get("company_country") as string,
-      currency_code: formData.get("currency_code") as string,
-    }
-
-    const createdCompany = await createCompany(companyForm)
-
-    const createdEmployee = await createEmployee({
-      company_id: createdCompany?.id as string,
-      customer_id: createdCustomer.id,
-      is_admin: true,
-      spending_limit: 0,
-    }).catch((err) => {
-      console.log("error creating employee", err)
-    })
-
     const cacheTag = await getCacheTag("customers")
     revalidateTag(cacheTag)
 
     await transferCart()
 
-    return {
-      customer: createdCustomer,
-      company: createdCompany,
-      employee: createdEmployee,
-    }
+    // Success -> return null so ErrorMessage doesn't try to render an object
+    return null
   } catch (error: any) {
     console.log("error", error)
     return error.toString()

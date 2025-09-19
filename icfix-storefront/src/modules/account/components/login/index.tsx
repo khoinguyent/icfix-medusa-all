@@ -24,11 +24,6 @@ const Login = ({ setCurrentView }: Props) => {
         <br />
         checkout.
       </Text>
-      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-        <Text className="text-sm text-yellow-800">
-          ⚠️ Backend server is currently offline. Login functionality may not work properly.
-        </Text>
-      </div>
       <form className="w-full" action={formAction}>
         <div className="flex flex-col w-full gap-y-2">
           <Input
