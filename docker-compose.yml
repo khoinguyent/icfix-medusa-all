@@ -47,7 +47,6 @@ services:
       POSTGRES_PORT: 5432
     ports:
       - "9002:9000"
-    command: ["sh", "-c", "./scripts/wait-for-db.sh && npx medusa migrations run && npx medusa start"]
 
 volumes:
   pgdata:

@@ -168,12 +168,17 @@ export async function login(_currentState: unknown, formData: FormData) {
         revalidateTag(cartsCacheTag)
       })
   } catch (error: any) {
+    console.error("Login error:", error)
+    if (error.message?.includes("404") || error.message?.includes("Not Found")) {
+      return "Backend server is not running. Please contact support or try again later."
+    }
     return error.toString()
   }
 
   try {
     await transferCart()
   } catch (error: any) {
+    console.error("Transfer cart error:", error)
     return error.toString()
   }
 }
