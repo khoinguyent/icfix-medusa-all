@@ -1,7 +1,15 @@
+// {
+//   "rewrites": [
+//     { "source": "/auth/:path*",     "destination": "/auth/:path*" },
+//     { "source": "/admin/:path*",    "destination": "/admin/:path*" },
+//     { "source": "/store/:path*",    "destination": "/store/:path*" }
+//   ]
+// }
 {
   "rewrites": [
-    { "source": "/auth/:path*",     "destination": "/auth/:path*" },
-    { "source": "/admin/:path*",    "destination": "/admin/:path*" },
-    { "source": "/store/:path*",    "destination": "/store/:path*" }
+    { "source": "/app/assets/:path*", "destination": "/assets/:path*" },
+    { "source": "/auth/:path*",       "destination": "/auth/:path*" },
+    { "source": "/admin/:path*",      "destination": "/admin/:path*" },
+    { "source": "/store/:path*",      "destination": "/store/:path*" }
   ]
 }
