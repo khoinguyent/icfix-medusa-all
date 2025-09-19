@@ -40,7 +40,7 @@ export async function retrieveCart(id?: string) {
       method: "GET",
       query: {
         fields:
-          "*items, *region, *items.product, *items.variant, +items.thumbnail, +items.metadata, *promotions, *company, *company.approval_settings, *customer, *approvals, +completed_at, *approval_status",
+          "*items, *region, *items.product, *items.variant, +items.thumbnail, +items.metadata, *promotions, *customer",
       },
       headers,
       next,
@@ -181,21 +181,44 @@ export async function addToCartBulk({
       process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
-  await fetch(
-    `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cart.id}/line-items/bulk`,
-    {
+  const bulkUrl = `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cart.id}/line-items/bulk`
+
+  let bulkSucceeded = false
+  try {
+    const resp = await fetch(bulkUrl, {
       method: "POST",
       headers,
       body: JSON.stringify({ line_items: lineItems }),
-    }
-  )
-    .then(async () => {
-      const fullfillmentCacheTag = await getCacheTag("fulfillment")
-      revalidateTag(fullfillmentCacheTag)
-      const cartCacheTag = await getCacheTag("carts")
-      revalidateTag(cartCacheTag)
     })
-    .catch(medusaError)
+
+    if (resp.ok) {
+      bulkSucceeded = true
+    }
+  } catch (e) {
+    // ignore; fall back below
+  }
+
+  if (!bulkSucceeded) {
+    // Fall back to adding items one by one using the SDK API which exists across versions
+    for (const item of lineItems) {
+      await sdk.store.cart
+        .createLineItem(
+          cart.id,
+          {
+            variant_id: item.variant_id!,
+            quantity: item.quantity!,
+          },
+          {},
+          await getAuthHeaders()
+        )
+        .catch(medusaError)
+    }
+  }
+
+  const fullfillmentCacheTag = await getCacheTag("fulfillment")
+  revalidateTag(fullfillmentCacheTag)
+  const cartCacheTag = await getCacheTag("carts")
+  revalidateTag(cartCacheTag)
 }
 
 export async function updateLineItem({

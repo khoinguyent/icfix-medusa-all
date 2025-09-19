@@ -53,4 +53,8 @@ export const listCartFreeShippingPrices = async (
       cache: "force-cache",
     })
     .then((data) => data.prices)
+    .catch((error) => {
+      console.warn("Could not fetch free shipping prices:", error)
+      return []
+    })
 }
