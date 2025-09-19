@@ -1,4 +1,3 @@
-import { acceptTransferRequest } from "@lib/data/orders"
 import { Heading, Text } from "@medusajs/ui"
 
 export default async function TransferPage({
@@ -6,33 +5,21 @@ export default async function TransferPage({
 }: {
   params: { id: string; token: string }
 }) {
-  const { id, token } = params
-
-  const { success, error } = await acceptTransferRequest(id, token)
+  const { id } = params
 
   return (
     <div className="flex flex-col gap-y-4 items-start w-2/5 mx-auto mt-10 mb-20">
       <div className="flex flex-col gap-y-6">
-        {success && (
-          <>
-            <Heading level="h1" className="text-xl text-zinc-900">
-              Order transfered!
-            </Heading>
-            <Text className="text-zinc-600">
-              Order {id} has been successfully transfered to the new owner.
-            </Text>
-          </>
-        )}
-        {!success && (
-          <>
-            <Text className="text-zinc-600">
-              There was an error accepting the transfer. Please try again.
-            </Text>
-            {error && (
-              <Text className="text-red-500">Error message: {error}</Text>
-            )}
-          </>
-        )}
+        <Heading level="h1" className="text-xl text-zinc-900">
+          Transfer request for order {id}
+        </Heading>
+        <Text className="text-zinc-600">
+          Transfer functionality has been removed from this version.
+        </Text>
+        <div className="w-full h-px bg-zinc-200" />
+        <Text className="text-zinc-600">
+          Please contact support if you need assistance with order transfers.
+        </Text>
       </div>
     </div>
   )
