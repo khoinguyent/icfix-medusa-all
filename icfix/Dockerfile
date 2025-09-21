@@ -15,19 +15,8 @@ RUN apk add --no-cache netcat-openbsd \
 COPY . .
 RUN chmod +x /app/scripts/wait-for-db.sh
 
-# Build the project (excluding admin bundle to save memory)
-# Set environment to prevent admin bundle build
-ENV MEDUSA_ADMIN_ONBOARDING_TYPE=disabled
-ENV MEDUSA_ADMIN_SERVE=false
+# Build the project
 RUN npm run build
-
-# Explicitly remove any admin build artifacts that might have been created
-RUN rm -rf build/admin 2>/dev/null || true
-RUN rm -rf .medusa/admin 2>/dev/null || true
-RUN rm -rf dist/admin 2>/dev/null || true
-
-# Set runtime environment to disable admin UI serving
-ENV MEDUSA_ADMIN_SERVE=false
 
 # Expose the port the app runs on
 EXPOSE 9000
