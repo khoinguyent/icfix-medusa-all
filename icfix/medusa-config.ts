@@ -7,8 +7,8 @@ module.exports = defineConfig({
     "medusa-admin-webhooks-ui": true,
   },
   admin: {
-    // Remove disable: true to enable admin API endpoints
-    // Admin UI serving is controlled by build process, not runtime
+    // Disable admin UI serving but keep API endpoints
+    disable: false,
     // @ts-ignore
     features: {
       "medusa-admin-workflows-ui": true,
