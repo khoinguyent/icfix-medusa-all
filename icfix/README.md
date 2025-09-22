@@ -85,3 +85,4 @@ R2_PREFIX=
 Notes:
 - Ensure your bucket CORS permits your domains if clients fetch files directly.
 - If serving files via a custom domain/Cloudflare Worker, set `R2_FILE_URL` to that domain.
+# Trigger Vercel build
