@@ -1,2 +1,5 @@
-const { AdminRoot } = require("./src/admin/root.tsx")
-module.exports = { plugins: [], root: AdminRoot }
+module.exports = {
+  plugins: [],
+  // Point to the file path (default export), not a require’d symbol
+  root: "./src/admin/root.tsx",
+}
