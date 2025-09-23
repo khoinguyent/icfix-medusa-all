@@ -80,30 +80,23 @@ const MegaMenu = ({
         onMouseLeave={handleMenuLeave}
         className="z-50"
       >
-        <LocalizedClientLink
-          className="hover:text-ui-fg-base hover:bg-neutral-100 rounded-full px-3 py-2"
-          href="/store"
-        >
-          Products
-        </LocalizedClientLink>
+        <div className="flex flex-row gap-2 pl-8">
+          {mainCategories.map((category) => (
+            <LocalizedClientLink
+              key={category.id}
+              href={`/categories/${category.handle}`}
+              className={clx(
+                "hover:cursor-pointer rounded-full px-3 py-2 w-fit font-medium"
+              )}
+              onMouseEnter={() => handleCategoryHover(category.id)}
+              onMouseLeave={handleCategoryLeave}
+            >
+              {category.name}
+            </LocalizedClientLink>
+          ))}
+        </div>
         {isHovered && (
           <div className="fixed left-0 right-0 top-[60px] flex gap-32 py-10 px-20 bg-white border-b border-neutral-200 ">
-            <div className="flex flex-col gap-2">
-              {mainCategories.map((category) => (
-                <LocalizedClientLink
-                  key={category.id}
-                  href={`/categories/${category.handle}`}
-                  className={clx(
-                    "hover:bg-neutral-100 hover:cursor-pointer rounded-full px-3 py-2 w-fit font-medium",
-                    selectedCategory === category.id && "bg-neutral-100"
-                  )}
-                  onMouseEnter={() => handleCategoryHover(category.id)}
-                  onMouseLeave={handleCategoryLeave}
-                >
-                  {category.name}
-                </LocalizedClientLink>
-              ))}
-            </div>
             {selectedCategory && (
               <div className="grid grid-cols-4 gap-16">
                 {getSubCategories(selectedCategory).map((category) => (
