@@ -28,7 +28,7 @@ export async function NavigationHeader() {
             >
               <h1 className="small:text-base text-sm font-medium flex items-center">
                 <LogoIcon className="inline mr-2" />
-                Medusa B2B Starter
+                Icfix
               </h1>
             </LocalizedClientLink>
 
@@ -55,7 +55,7 @@ export async function NavigationHeader() {
 
             <div className="h-4 w-px bg-neutral-300" />
 
-            {customer && cart?.items && cart.items.length > 0 ? (
+            {/* {customer && cart?.items && cart.items.length > 0 ? (
               <RequestQuoteConfirmation>
                 <button
                   className="flex gap-1.5 items-center rounded-2xl bg-none shadow-none border-none hover:bg-neutral-100 px-2 py-1"
@@ -72,7 +72,7 @@ export async function NavigationHeader() {
                   <span className="hidden small:inline-block">Quote</span>
                 </button>
               </RequestQuotePrompt>
-            )}
+            )} */}
 
             <Suspense fallback={<SkeletonAccountButton />}>
               <AccountButton customer={customer} />
