@@ -1,32 +1,43 @@
-import { MeiliSearch } from "meilisearch"
-
 export class MeiliSearchService {
-  private client: MeiliSearch
+  private client: any
   private indexName: string = "products"
+  private MeiliSearch: any
 
   constructor() {
-    const host = process.env.MEILISEARCH_HOST || "http://localhost:7700"
-    const apiKey = process.env.MEILISEARCH_API_KEY || "masterKey"
-    
-    this.client = new MeiliSearch({
-      host,
-      apiKey,
-    })
+    // Initialize client will be done in async method
+  }
+
+  private async initializeClient() {
+    if (!this.client) {
+      const { MeiliSearch } = await import("meilisearch")
+      this.MeiliSearch = MeiliSearch
+      
+      const host = process.env.MEILISEARCH_HOST || "http://localhost:7700"
+      const apiKey = process.env.MEILISEARCH_API_KEY || "masterKey"
+      
+      this.client = new MeiliSearch({
+        host,
+        apiKey,
+      })
+    }
+    return this.client
   }
 
   async initializeIndex() {
     try {
+      const client = await this.initializeClient()
+      
       // Check if index exists, if not create it
-      const indexes = await this.client.getIndexes()
+      const indexes = await client.getIndexes()
       const indexExists = indexes.results.some(index => index.uid === this.indexName)
       
       if (!indexExists) {
-        await this.client.createIndex(this.indexName, {
+        await client.createIndex(this.indexName, {
           primaryKey: "id"
         })
         
         // Configure searchable attributes
-        await this.client.index(this.indexName).updateSearchableAttributes([
+        await client.index(this.indexName).updateSearchableAttributes([
           "title",
           "description", 
           "handle",
@@ -37,7 +48,7 @@ export class MeiliSearchService {
         ])
         
         // Configure displayed attributes
-        await this.client.index(this.indexName).updateDisplayedAttributes([
+        await client.index(this.indexName).updateDisplayedAttributes([
           "id",
           "title",
           "description",
@@ -49,7 +60,7 @@ export class MeiliSearchService {
         ])
         
         // Configure filterable attributes
-        await this.client.index(this.indexName).updateFilterableAttributes([
+        await client.index(this.indexName).updateFilterableAttributes([
           "collection_id",
           "category_id",
           "variant_price",
@@ -57,7 +68,7 @@ export class MeiliSearchService {
         ])
         
         // Configure sortable attributes
-        await this.client.index(this.indexName).updateSortableAttributes([
+        await client.index(this.indexName).updateSortableAttributes([
           "created_at",
           "updated_at",
           "variant_price"
@@ -70,8 +81,9 @@ export class MeiliSearchService {
 
   async indexProduct(product: any) {
     try {
+      const client = await this.initializeClient()
       const searchableProduct = this.transformProductForSearch(product)
-      await this.client.index(this.indexName).addDocuments([searchableProduct])
+      await client.index(this.indexName).addDocuments([searchableProduct])
     } catch (error) {
       console.error("Error indexing product:", error)
     }
@@ -79,8 +91,9 @@ export class MeiliSearchService {
 
   async indexProducts(products: any[]) {
     try {
+      const client = await this.initializeClient()
       const searchableProducts = products.map(product => this.transformProductForSearch(product))
-      await this.client.index(this.indexName).addDocuments(searchableProducts)
+      await client.index(this.indexName).addDocuments(searchableProducts)
     } catch (error) {
       console.error("Error indexing products:", error)
     }
@@ -88,7 +101,8 @@ export class MeiliSearchService {
 
   async deleteProduct(productId: string) {
     try {
-      await this.client.index(this.indexName).deleteDocument(productId)
+      const client = await this.initializeClient()
+      await client.index(this.indexName).deleteDocument(productId)
     } catch (error) {
       console.error("Error deleting product from search:", error)
     }
@@ -96,6 +110,7 @@ export class MeiliSearchService {
 
   async searchProducts(query: string, options: any = {}) {
     try {
+      const client = await this.initializeClient()
       const searchOptions = {
         limit: options.limit || 20,
         offset: options.offset || 0,
@@ -104,7 +119,7 @@ export class MeiliSearchService {
         ...options
       }
       
-      const results = await this.client.index(this.indexName).search(query, searchOptions)
+      const results = await client.index(this.indexName).search(query, searchOptions)
       return results
     } catch (error) {
       console.error("Error searching products:", error)

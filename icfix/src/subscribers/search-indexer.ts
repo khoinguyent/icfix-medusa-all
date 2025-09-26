@@ -1,5 +1,4 @@
 import { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
-import { MeiliSearchService } from "../modules/search/meilisearch"
 
 export const config: SubscriberConfig = {
   event: [
@@ -16,6 +15,7 @@ export default async function searchIndexerHandler({
   event,
   container,
 }: SubscriberArgs) {
+  const { MeiliSearchService } = require("../modules/search/meilisearch")
   const searchService = new MeiliSearchService()
   
   try {

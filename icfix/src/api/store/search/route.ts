@@ -1,5 +1,4 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework"
-import { MeiliSearchService } from "../../modules/search/meilisearch"
 
 interface SearchRequestBody {
   q: string
@@ -30,6 +29,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       })
     }
 
+    const { MeiliSearchService } = require("../../modules/search/meilisearch")
     const searchService = new MeiliSearchService()
     const results = await searchService.searchProducts(q, {
       limit: parseInt(limit.toString()),
@@ -67,6 +67,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       })
     }
 
+    const { MeiliSearchService } = require("../../modules/search/meilisearch")
     const searchService = new MeiliSearchService()
     const results = await searchService.searchProducts(q as string, {
       limit: parseInt(limit),

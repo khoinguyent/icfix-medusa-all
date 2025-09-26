@@ -1,57 +1,62 @@
 version: "3.9"
 
 services:
+  # 1. PostgreSQL Database Service
   postgres:
     image: postgres:15-alpine
+    container_name: icfix-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-medusa}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - icfix-pgdata:/var/lib/postgresql/data
+    networks: [icfix-net]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-medusa}"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
       timeout: 5s
       retries: 10
-    restart: unless-stopped
 
+  # 2. Redis Cache Service
   redis:
     image: redis:7-alpine
+    container_name: icfix-redis
+    restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis_data:/data
+    networks: [icfix-net]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 10
-    restart: unless-stopped
 
+  # 3. MeiliSearch Service
   meilisearch:
     image: getmeili/meilisearch:v1.5
+    container_name: icfix-meilisearch
+    restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:-masterKey}
       MEILI_ENV: ${MEILISEARCH_ENV:-production}
       MEILI_NO_ANALYTICS: "true"
-    ports:
-      - "${MEILISEARCH_PORT:-7700}:7700"
     volumes:
       - meilisearch_data:/meili_data
+    networks: [icfix-net]
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7700/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-    restart: unless-stopped
 
-  medusa:
-    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/your-repo}:latest
+  # 4. Medusa Backend Service
+  medusa-backend:
+    # Using the new image built by your GitHub Actions workflow.
+    image: ghcr.io/khoinguyent/icfix-backend:latest
+    container_name: icfix-backend
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,21 +64,23 @@ services:
         condition: service_healthy
       meilisearch:
         condition: service_healthy
+    # Expose the port only to the internal Docker network for Nginx to access
     environment:
-      # Database configuration
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-medusa}
-      REDIS_URL: redis://redis:6379
+      MEDUSA_ADMIN_DISABLE: 'true'
+      NODE_ENV: ${NODE_ENV}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
       
       # MeiliSearch configuration
       MEILISEARCH_HOST: http://meilisearch:7700
       MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-masterKey}
       
       # JWT and CORS configuration
-      JWT_SECRET: ${JWT_SECRET:-supersecret}
-      COOKIE_SECRET: ${COOKIE_SECRET:-supersecret}
-      STORE_CORS: ${STORE_CORS:-http://localhost:8000}
-      ADMIN_CORS: ${ADMIN_CORS:-http://localhost:7001}
-      AUTH_CORS: ${AUTH_CORS:-http://localhost:9000}
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      STORE_CORS: ${STORE_CORS}
+      ADMIN_CORS: ${ADMIN_CORS}
+      AUTH_CORS: ${AUTH_CORS}
       
       # File storage (R2) - optional
       R2_ENDPOINT: ${R2_ENDPOINT}
@@ -83,20 +90,47 @@ services:
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
       R2_FILE_URL: ${R2_FILE_URL}
       R2_PREFIX: ${R2_PREFIX:-}
-      
-      # Node environment
-      NODE_ENV: ${NODE_ENV:-production}
-    ports:
-      - "${MEDUSA_PORT:-9000}:9000"
-    restart: unless-stopped
+    expose:
+      - "9000"
+    networks: [icfix-net]
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9000/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      test: ["CMD", "wget", "-qO-", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # 5. Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: icfix-nginx
+    restart: unless-stopped
+    depends_on:
+      medusa-backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/www:/var/www/certbot
+      - ./letsencrypt:/etc/letsencrypt
+    networks: [icfix-net]
+
+  # 6. Certbot for SSL Certificates
+  certbot:
+    image: certbot/certbot
+    container_name: icfix-certbot
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # Keep the container running to perform certificate renewals
+    entrypoint: ["sh", "-c", "sleep infinity"]
+    networks: [icfix-net]
 
 volumes:
-  pgdata:
-  redis_data:
+  icfix-pgdata:
   meilisearch_data:
+
+networks:
+  icfix-net:
+    driver: bridge
