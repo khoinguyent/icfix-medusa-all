@@ -1,5 +1,4 @@
 import { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { MeiliSearchService } from "../modules/search/meilisearch"
 
 export const config: SubscriberConfig = {
@@ -23,34 +22,23 @@ export default async function searchIndexerHandler({
     switch (event.name) {
       case "product.created":
       case "product.updated":
-        // Get the full product with variants, collection, and category
-        const productModuleService = container.resolve(ContainerRegistrationKeys.MODULE)
-        const product = await productModuleService.retrieveProduct(event.data.id, {
-          relations: ["variants", "collection", "category"]
-        })
-        
-        await searchService.indexProduct(product)
+        // For now, we'll just log the event and handle indexing later
+        // The initialization script will handle bulk indexing
+        console.log(`Product ${event.name}: ${(event.data as any)?.id}`)
         break
         
       case "product.deleted":
-        await searchService.deleteProduct(event.data.id)
+        const productId = (event.data as any)?.id
+        if (productId) {
+          await searchService.deleteProduct(productId)
+        }
         break
         
       case "product-variant.created":
       case "product-variant.updated":
       case "product-variant.deleted":
-        // When variants change, re-index the parent product
-        const variantModuleService = container.resolve(ContainerRegistrationKeys.MODULE)
-        const variant = await variantModuleService.retrieveProductVariant(event.data.id, {
-          relations: ["product"]
-        })
-        
-        const productModuleService2 = container.resolve(ContainerRegistrationKeys.MODULE)
-        const fullProduct = await productModuleService2.retrieveProduct(variant.product_id, {
-          relations: ["variants", "collection", "category"]
-        })
-        
-        await searchService.indexProduct(fullProduct)
+        // For now, we'll just log the event
+        console.log(`Product variant ${event.name}: ${(event.data as any)?.id}`)
         break
     }
   } catch (error) {

@@ -1,9 +1,26 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework"
 import { MeiliSearchService } from "../../modules/search/meilisearch"
 
+interface SearchRequestBody {
+  q: string
+  limit?: number
+  offset?: number
+  filters?: string
+  sort?: string[]
+}
+
+interface SearchQueryParams {
+  q?: string
+  limit?: string
+  offset?: string
+  filters?: string
+  sort?: string | string[]
+}
+
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const { q, limit = 20, offset = 0, filters = "", sort = [] } = req.body
+    const body = req.body as SearchRequestBody
+    const { q, limit = 20, offset = 0, filters = "", sort = [] } = body
     
     if (!q || q.trim() === "") {
       return res.json({
@@ -15,8 +32,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
     const searchService = new MeiliSearchService()
     const results = await searchService.searchProducts(q, {
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit: parseInt(limit.toString()),
+      offset: parseInt(offset.toString()),
       filters,
       sort
     })
@@ -25,8 +42,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       hits: results.hits,
       totalHits: results.totalHits,
       query: q,
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      limit: parseInt(limit.toString()),
+      offset: parseInt(offset.toString())
     })
   } catch (error) {
     console.error("Search API error:", error)
@@ -39,9 +56,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
-    const { q, limit = 20, offset = 0, filters = "", sort = [] } = req.query
+    const query = req.query as SearchQueryParams
+    const { q, limit = "20", offset = "0", filters = "", sort = [] } = query
     
-    if (!q || q.trim() === "") {
+    if (!q || (typeof q === 'string' && q.trim() === "")) {
       return res.json({
         hits: [],
         totalHits: 0,
@@ -51,8 +69,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
     const searchService = new MeiliSearchService()
     const results = await searchService.searchProducts(q as string, {
-      limit: parseInt(limit as string),
-      offset: parseInt(offset as string),
+      limit: parseInt(limit),
+      offset: parseInt(offset),
       filters: filters as string,
       sort: Array.isArray(sort) ? sort : [sort as string]
     })
@@ -61,8 +79,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       hits: results.hits,
       totalHits: results.totalHits,
       query: q,
-      limit: parseInt(limit as string),
-      offset: parseInt(offset as string)
+      limit: parseInt(limit),
+      offset: parseInt(offset)
     })
   } catch (error) {
     console.error("Search API error:", error)

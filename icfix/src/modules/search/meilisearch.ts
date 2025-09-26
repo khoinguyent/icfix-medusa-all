@@ -1,11 +1,6 @@
-import { Module, ModuleExports } from "@medusajs/framework"
 import { MeiliSearch } from "meilisearch"
 
-export const MeiliSearchModule: ModuleExports = {
-  service: MeiliSearchService,
-}
-
-class MeiliSearchService {
+export class MeiliSearchService {
   private client: MeiliSearch
   private indexName: string = "products"
 
@@ -154,5 +149,3 @@ class MeiliSearchService {
     }
   }
 }
-
-export default MeiliSearchModule
