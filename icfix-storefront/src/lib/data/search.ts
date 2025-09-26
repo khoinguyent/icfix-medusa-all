@@ -53,6 +53,8 @@ export async function searchProducts(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // Required by Medusa v2 Store APIs
+          "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
         },
         body: JSON.stringify({
           q: query,
