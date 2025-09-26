@@ -21,8 +21,27 @@ sleep 30
 
 # Initialize search
 echo "🔧 Setting up search..."
-docker exec icfix-backend npm run init-search
-docker exec icfix-backend npx medusa exec src/scripts/reindex-products-cli.ts
+# Check if the new scripts exist, if not use fallback methods
+if docker exec icfix-backend test -f "src/scripts/initialize-meilisearch.ts"; then
+    echo "Using new initialization script..."
+    docker exec icfix-backend npx ts-node src/scripts/initialize-meilisearch.ts
+else
+    echo "Using fallback initialization..."
+    # Fallback: initialize via API call
+    curl -X POST "http://localhost:7700/indexes" \
+         -H "Authorization: Bearer $MEILISEARCH_API_KEY" \
+         -H "Content-Type: application/json" \
+         -d '{"uid": "products", "primaryKey": "id"}'
+fi
+
+if docker exec icfix-backend test -f "src/scripts/reindex-products-cli.ts"; then
+    echo "Using new reindex script..."
+    docker exec icfix-backend npx medusa exec src/scripts/reindex-products-cli.ts
+else
+    echo "Using fallback reindexing..."
+    # Fallback: reindex via API (this would need to be implemented)
+    echo "⚠️  Fallback reindexing not implemented. Please update the image."
+fi
 
 echo "✅ Deployment complete!"
 echo "🧪 Testing search..."
