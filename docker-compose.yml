@@ -28,6 +28,22 @@ services:
       timeout: 3s
       retries: 10
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    environment:
+      MEILI_MASTER_KEY: masterKey
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7700/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   medusa:
     build:
       context: ./icfix
@@ -37,6 +53,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      meilisearch:
+        condition: service_healthy
     env_file:
       - ./icfix/.env
     environment:
@@ -45,10 +63,14 @@ services:
       REDIS_URL: redis://redis:6379
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
+      # MeiliSearch configuration
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: masterKey
     ports:
       - "9002:9000"
 
 volumes:
   pgdata:
+  meilisearch_data:
 
 

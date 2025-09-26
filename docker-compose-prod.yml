@@ -1,65 +1,138 @@
-# This file defines the services that will run on your server.
-# It includes the database, cache, and your Medusa backend application.
-
-version: '3.8'
+version: "3.9"
 
 services:
   # 1. PostgreSQL Database Service
   postgres:
-    image: postgres:14-alpine
+    image: postgres:15-alpine
     container_name: icfix-postgres
+    restart: unless-stopped
     environment:
-      # These variables should be in a .env file in the same directory on your server
+      POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - medusa-db-data:/var/lib/postgresql/data # This makes sure your database data persists
-    restart: unless-stopped
+      - icfix-pgdata:/var/lib/postgresql/data
+    networks: [icfix-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   # 2. Redis Cache Service
   redis:
-    image: redis:6.2-alpine
+    image: redis:7-alpine
     container_name: icfix-redis
     restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    networks: [icfix-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
-  # 3. Medusa Backend Service
-  medusa-backend:
-    # IMPORTANT: This image will be pulled from GHCR after being built by your GitHub Action.
-    # Replace 'YOUR_GITHUB_USERNAME' with your actual GitHub username.
-    image: ghcr.io/YOUR_GITHUB_USERNAME/icfix-backend:latest
-    container_name: icfix-backend
+  # 3. MeiliSearch Service
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: icfix-meilisearch
+    restart: unless-stopped
     ports:
-      - "9000:9000"
-    # Load environment variables from the .env file on your server
-    env_file:
-      - .env
-    # The backend needs to know how to connect to the other services.
-    # Docker Compose makes the service names (e.g., 'postgres', 'redis') available as hostnames.
+      - "7700:7700"
     environment:
-      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
-      REDIS_URL: "redis://redis:6379"
-      MEDUSA_ADMIN_DISABLE: "true"
-      # ISR revalidation endpoint config
-      REVALIDATE_ENDPOINT: ${REVALIDATE_ENDPOINT}
-      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
-      # Cloudflare R2 (S3-compatible) configuration
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:-masterKey}
+      MEILI_ENV: ${MEILISEARCH_ENV:-production}
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch_data:/meili_data
+    networks: [icfix-net]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7700/version || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # 4. Medusa Backend Service
+  medusa-backend:
+    # Using the new image built by your GitHub Actions workflow.
+    image: ghcr.io/khoinguyent/icfix-backend:latest
+    container_name: icfix-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    # Expose the port only to the internal Docker network for Nginx to access
+    environment:
+      MEDUSA_ADMIN_DISABLE: 'true'
+      NODE_ENV: ${NODE_ENV}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      
+      # MeiliSearch configuration
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-masterKey}
+      
+      # JWT and CORS configuration
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      STORE_CORS: ${STORE_CORS}
+      ADMIN_CORS: ${ADMIN_CORS}
+      AUTH_CORS: ${AUTH_CORS}
+      
+      # File storage (R2) - optional
       R2_ENDPOINT: ${R2_ENDPOINT}
-      R2_REGION: ${R2_REGION}
+      R2_REGION: ${R2_REGION:-auto}
       R2_BUCKET: ${R2_BUCKET}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
-      # Public base URL used to construct returned file URLs (e.g., https://assets.example.com)
       R2_FILE_URL: ${R2_FILE_URL}
-      # Optional key prefix inside the bucket (e.g., uploads/)
-      R2_PREFIX: ${R2_PREFIX}
-    depends_on:
-      - postgres
-      - redis
-    # Wait for DB, run migrations, then start
-    command: >
-      sh -lc "/app/scripts/wait-for-db.sh && npx medusa db:migrate && npx medusa start"
+      R2_PREFIX: ${R2_PREFIX:-}
+    expose:
+      - "9000"
+    networks: [icfix-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # 5. Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: icfix-nginx
     restart: unless-stopped
+    depends_on:
+      medusa-backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/www:/var/www/certbot
+      - ./letsencrypt:/etc/letsencrypt
+    networks: [icfix-net]
+
+  # 6. Certbot for SSL Certificates
+  certbot:
+    image: certbot/certbot
+    container_name: icfix-certbot
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # Keep the container running to perform certificate renewals
+    entrypoint: ["sh", "-c", "sleep infinity"]
+    networks: [icfix-net]
 
 volumes:
-  medusa-db-data: # Defines the volume for persistent database storage
+  icfix-pgdata:
+  meilisearch_data:
+
+networks:
+  icfix-net:
+    driver: bridge
