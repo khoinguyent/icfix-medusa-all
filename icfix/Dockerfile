@@ -13,8 +13,8 @@ RUN apk add --no-cache \
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies using npm (uses package-lock.json)
-RUN npm ci --only=production
+# Install all dependencies (include dev deps required for build)
+RUN npm ci
 
 # Copy the rest of your app's source code
 COPY . .
@@ -22,8 +22,11 @@ COPY . .
 # Make scripts executable
 RUN chmod +x /app/scripts/wait-for-db.sh
 
-# Build the project
+# Build the project (emits compiled files into dist/)
 RUN npm run build
+
+# Prune devDependencies to reduce final image size
+RUN npm prune --omit=dev
 
 # Create a non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
