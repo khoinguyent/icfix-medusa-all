@@ -47,24 +47,23 @@ export async function searchProducts(
   } = {}
 ): Promise<SearchResponse> {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"}/store/search`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Required by Medusa v2 Store APIs
-          "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
-        },
-        body: JSON.stringify({
-          q: query,
-          limit: options.limit || 20,
-          offset: options.offset || 0,
-          filters: options.filters || "",
-          sort: options.sort || [],
-        }),
-      }
-    )
+    const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+    const params = new URLSearchParams({
+      q: query,
+      limit: String(options.limit ?? 20),
+      offset: String(options.offset ?? 0),
+    })
+    if (options.filters) params.set("filters", options.filters)
+    if (options.sort && options.sort.length) params.set("sort", options.sort.join(","))
+
+    const response = await fetch(`${baseUrl}/store/search?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+      },
+      cache: "no-store",
+    })
 
     if (!response.ok) {
       throw new Error(`Search request failed: ${response.statusText}`)
