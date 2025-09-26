@@ -38,6 +38,9 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/.medusa /app/.medusa
 # Keep sources for reference (not required, but harmless)
 COPY --from=builder /app/src /app/src
+## Config files required at runtime
+COPY --from=builder /app/medusa-config.ts /app/medusa-config.ts
+COPY --from=builder /app/tsconfig.json /app/tsconfig.json
 
 # Non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S medusa -u 1001
