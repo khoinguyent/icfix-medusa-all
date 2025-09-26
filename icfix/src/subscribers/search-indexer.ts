@@ -1,4 +1,5 @@
 import { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
+import { Modules } from "@medusajs/framework/utils"
 
 export const config: SubscriberConfig = {
   event: [
@@ -27,7 +28,7 @@ export default async function searchIndexerHandler({
           console.log(`Indexing product ${event.name}: ${productId}`)
           
           // Get the full product data from the database
-          const productModuleService = container.resolve("productModuleService")
+          const productModuleService = container.resolve(Modules.PRODUCT)
           const product = await productModuleService.retrieveProduct(productId, {
             relations: [
               "variants",
@@ -63,7 +64,7 @@ export default async function searchIndexerHandler({
           console.log(`Re-indexing product due to variant ${event.name}: ${productIdFromVariant}`)
           
           // Get the full product data and re-index
-          const productModuleService = container.resolve("productModuleService")
+          const productModuleService = container.resolve(Modules.PRODUCT)
           const product = await productModuleService.retrieveProduct(productIdFromVariant, {
             relations: [
               "variants",
