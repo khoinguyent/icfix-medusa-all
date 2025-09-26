@@ -26,12 +26,11 @@ export default async function searchIndexerHandler({
         if (productId) {
           console.log(`Indexing product ${event.name}: ${productId}`)
           
-          // Get the product with all relations
-          const productService = container.resolve("productService")
-          const product = await productService.retrieveProduct(productId, {
+          // Get the full product data from the database
+          const productModuleService = container.resolve("productModuleService")
+          const product = await productModuleService.retrieveProduct(productId, {
             relations: [
               "variants",
-              "variants.prices", 
               "collection",
               "categories",
               "images"
@@ -50,22 +49,24 @@ export default async function searchIndexerHandler({
         if (deletedProductId) {
           console.log(`Deleting product from search index: ${deletedProductId}`)
           await searchService.deleteProduct(deletedProductId)
+          console.log(`Successfully deleted product from search: ${deletedProductId}`)
         }
         break
         
       case "product-variant.created":
       case "product-variant.updated":
       case "product-variant.deleted":
-        const variantProductId = (event.data as any)?.product_id
-        if (variantProductId) {
-          console.log(`Re-indexing product due to variant ${event.name}: ${variantProductId}`)
+        const variantId = (event.data as any)?.id
+        const productIdFromVariant = (event.data as any)?.product_id
+        
+        if (productIdFromVariant) {
+          console.log(`Re-indexing product due to variant ${event.name}: ${productIdFromVariant}`)
           
-          // Re-index the parent product when variants change
-          const productService = container.resolve("productService")
-          const product = await productService.retrieveProduct(variantProductId, {
+          // Get the full product data and re-index
+          const productModuleService = container.resolve("productModuleService")
+          const product = await productModuleService.retrieveProduct(productIdFromVariant, {
             relations: [
               "variants",
-              "variants.prices",
               "collection", 
               "categories",
               "images"
@@ -74,7 +75,7 @@ export default async function searchIndexerHandler({
           
           if (product) {
             await searchService.indexProduct(product)
-            console.log(`Successfully re-indexed product: ${variantProductId}`)
+            console.log(`Successfully re-indexed product after variant change: ${productIdFromVariant}`)
           }
         }
         break
