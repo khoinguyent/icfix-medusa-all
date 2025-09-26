@@ -24,10 +24,10 @@ echo "⏳ Waiting for services to start..."
 sleep 30
 
 echo "🔧 Initializing Meilisearch index..."
-docker exec icfix-backend npm run ts-node src/scripts/initialize-meilisearch.ts
+docker exec icfix-backend npm run init-search
 
 echo "📊 Re-indexing all products..."
-docker exec icfix-backend npm run medusa exec src/scripts/reindex-products-cli.ts
+docker exec icfix-backend npx medusa exec src/scripts/reindex-products-cli.ts
 
 echo "🧪 Testing search functionality..."
 # Test if Meilisearch is working

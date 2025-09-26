@@ -21,8 +21,8 @@ sleep 30
 
 # Initialize search
 echo "🔧 Setting up search..."
-docker exec icfix-backend npm run ts-node src/scripts/initialize-meilisearch.ts
-docker exec icfix-backend npm run medusa exec src/scripts/reindex-products-cli.ts
+docker exec icfix-backend npm run init-search
+docker exec icfix-backend npx medusa exec src/scripts/reindex-products-cli.ts
 
 echo "✅ Deployment complete!"
 echo "🧪 Testing search..."
