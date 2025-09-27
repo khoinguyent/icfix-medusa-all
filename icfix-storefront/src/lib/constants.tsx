@@ -1,6 +1,7 @@
 import Bancontact from "@modules/common/icons/bancontact"
 import FilePlus from "@modules/common/icons/file-plus"
 import Ideal from "@modules/common/icons/ideal"
+import Package from "@modules/common/icons/package"
 import PayPal from "@modules/common/icons/paypal"
 import { CreditCard } from "@medusajs/icons"
 import React from "react"
@@ -10,27 +11,28 @@ export const paymentInfoMap: Record<
   string,
   { title: string; icon: React.JSX.Element }
 > = {
-  pp_stripe_stripe: {
-    title: "Credit card",
-    icon: <CreditCard />,
-  },
-  "pp_stripe-ideal_stripe": {
-    title: "iDeal",
-    icon: <Ideal />,
-  },
-  "pp_stripe-bancontact_stripe": {
-    title: "Bancontact",
-    icon: <Bancontact />,
-  },
-  pp_paypal_paypal: {
-    title: "PayPal",
-    icon: <PayPal />,
-  },
+  // Only COD payment option is enabled
   pp_system_default: {
-    title: "Pay by invoice",
-    icon: <FilePlus />,
+    title: "Cash on Delivery",
+    icon: <Package />,
   },
-  // Add more payment providers here
+  // Other payment providers are disabled
+  // pp_stripe_stripe: {
+  //   title: "Credit card",
+  //   icon: <CreditCard />,
+  // },
+  // "pp_stripe-ideal_stripe": {
+  //   title: "iDeal",
+  //   icon: <Ideal />,
+  // },
+  // "pp_stripe-bancontact_stripe": {
+  //   title: "Bancontact",
+  //   icon: <Bancontact />,
+  // },
+  // pp_paypal_paypal: {
+  //   title: "PayPal",
+  //   icon: <PayPal />,
+  // },
 }
 
 // This only checks if it is native stripe for card payments, it ignores the other stripe-based providers

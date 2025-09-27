@@ -89,5 +89,17 @@ module.exports = defineConfig({
         ],
       },
     },
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa-payment-manual",
+            id: "system",
+            options: {},
+          },
+        ],
+      },
+    },
   ]
 })
