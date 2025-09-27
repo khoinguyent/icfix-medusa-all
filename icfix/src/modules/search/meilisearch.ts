@@ -111,12 +111,16 @@ export class MeiliSearchService {
   async searchProducts(query: string, options: any = {}) {
     try {
       const client = await this.initializeClient()
-      const searchOptions = {
+      const searchOptions: any = {
         limit: options.limit || 20,
         offset: options.offset || 0,
-        filters: options.filters || "",
         sort: options.sort || [],
         ...options
+      }
+      
+      // Only add filter if it's not empty and not an empty string
+      if (options.filters && options.filters.trim() !== "") {
+        searchOptions.filter = options.filters
       }
       
       const results = await client.index(this.indexName).search(query, searchOptions)
