@@ -4,7 +4,7 @@ interface SearchRequestBody {
   q: string
   limit?: number
   offset?: number
-  filters?: string
+  filter?: string
   sort?: string[]
 }
 
@@ -12,14 +12,14 @@ interface SearchQueryParams {
   q?: string
   limit?: string
   offset?: string
-  filters?: string
+  filter?: string
   sort?: string | string[]
 }
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
     const body = req.body as SearchRequestBody
-    const { q, limit = 20, offset = 0, filters = "", sort = [] } = body
+    const { q, limit = 20, offset = 0, filter = "", sort = [] } = body
     
     if (!q || q.trim() === "") {
       return res.json({
@@ -34,7 +34,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const results = await searchService.searchProducts(q, {
       limit: parseInt(limit.toString()),
       offset: parseInt(offset.toString()),
-      filters,
+      filters: filter,
       sort
     })
 
@@ -57,7 +57,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
     const query = req.query as SearchQueryParams
-    const { q, limit = "20", offset = "0", filters = "", sort = [] } = query
+    const { q, limit = "20", offset = "0", filter = "", sort = [] } = query
     
     if (!q || (typeof q === 'string' && q.trim() === "")) {
       return res.json({
@@ -72,7 +72,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const results = await searchService.searchProducts(q as string, {
       limit: parseInt(limit),
       offset: parseInt(offset),
-      filters: filters as string,
+      filters: filter as string,
       sort: Array.isArray(sort) ? sort : [sort as string]
     })
 

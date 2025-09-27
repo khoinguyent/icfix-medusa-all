@@ -42,7 +42,7 @@ export async function searchProducts(
   options: {
     limit?: number
     offset?: number
-    filters?: string
+    filter?: string
     sort?: string[]
   } = {}
 ): Promise<SearchResponse> {
@@ -53,7 +53,7 @@ export async function searchProducts(
       limit: String(options.limit ?? 20),
       offset: String(options.offset ?? 0),
     })
-    if (options.filters) params.set("filters", options.filters)
+    if (options.filter) params.set("filter", options.filter)
     if (options.sort && options.sort.length) params.set("sort", options.sort.join(","))
 
     const response = await fetch(`${baseUrl}/store/search?${params.toString()}`, {
