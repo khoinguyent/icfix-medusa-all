@@ -144,12 +144,16 @@ export default async function seedDemoData({ container }: ExecArgs) {
   }
 
   const fulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
-    name: "European Warehouse delivery",
+    name: "Global Warehouse delivery",
     type: "shipping",
     service_zones: [
       {
-        name: "Europe",
+        name: "Global",
         geo_zones: [
+          {
+            country_code: "vn",
+            type: "country",
+          },
           {
             country_code: "gb",
             type: "country",
