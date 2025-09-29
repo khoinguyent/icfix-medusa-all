@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     default: "icFix Shop",
     template: "%s | icFix Shop",
   },
-  description: "icFix Shop — Buy phones, laptops, and accessories with fast delivery.",
+  description: "icFix Shop — Bán linh kiện và các thiết bị sửa chửa iPhone",
   alternates: {
     canonical: "/",
   },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "icFix Shop",
-    description: "icFix Shop — Buy phones, laptops, and accessories with fast delivery.",
+    description: "icFix Shop — icFix Shop — Bán linh kiện và các thiết bị sửa chửa iPhone",
     url: getBaseURL(),
     siteName: "icFix Shop",
     images: [
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "icFix Shop",
-    description: "icFix Shop — Buy phones, laptops, and accessories with fast delivery.",
+    description: "icFix Shop — icFix Shop — Bán linh kiện và các thiết bị sửa chửa iPhone",
     images: ["/twitter-image.jpg"],
   },
 }
