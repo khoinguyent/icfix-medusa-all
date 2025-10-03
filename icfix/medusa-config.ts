@@ -48,6 +48,15 @@ module.exports = defineConfig({
         ],
       },
     },
+    // EmailEngine integration (Gmail API via HTTPS - bypasses DO SMTP restrictions)
+    {
+      resolve: "./src/services/email-engine-notification",
+      options: {
+        apiUrl: process.env.EMAILENGINE_API_URL || "https://your-emailengine-domain.com",
+        apiKey: process.env.EMAILENGINE_API_KEY,
+        accountId: process.env.EMAILENGINE_ACCOUNT_ID,
+      },
+    },
   ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
