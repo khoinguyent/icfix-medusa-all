@@ -146,8 +146,8 @@ services:
     ports:
       - "${EMAILENGINE_PORT:-3333}:3333"
     volumes:
-      - emailengine_data:/etc/emailengine/data
-      - emailengine_credentials:/etc/emailengine/credentials
+      - emailengine_data:/data
+      - emailengine_credentials:/credentials
     networks: [icfix-net]
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3333/api/v1/account"]
