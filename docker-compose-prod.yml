@@ -91,12 +91,10 @@ services:
       R2_FILE_URL: ${R2_FILE_URL}
       R2_PREFIX: ${R2_PREFIX:-}
       
-      # SMTP Email configuration - direct
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASSWORD: ${SMTP_PASSWORD}
-      SMTP_TLS: ${SMTP_TLS:-true}
+      # EmailEngine integration - optional
+      EMAILENGINE_API_URL: ${EMAILENGINE_API_URL:-https://icfix.duckdns.org/email}
+      EMAILENGINE_API_KEY: ${EMAILENGINE_API_KEY}
+      EMAILENGINE_ACCOUNT_ID: ${EMAILENGINE_ACCOUNT_ID}
     expose:
       - "9000"
     networks: [icfix-net]
@@ -123,11 +121,9 @@ services:
       - ./letsencrypt:/etc/letsencrypt
     networks: [icfix-net]
 
-  # 6. EmailEngine Service (Build from source)
+  # 6. EmailEngine Service
   emailengine:
-    build:
-      context: .
-      dockerfile: Dockerfile.emailengine
+    image: postalhq/emailengine:latest
     container_name: icfix-emailengine
     restart: unless-stopped
     depends_on:
@@ -160,7 +156,7 @@ services:
       retries: 5
       start_period: 60s
 
-  # 6. Certbot for SSL Certificates
+  # 7. Certbot for SSL Certificates
   certbot:
     image: certbot/certbot
     container_name: icfix-certbot
@@ -174,6 +170,8 @@ services:
 volumes:
   icfix-pgdata:
   meilisearch_data:
+  emailengine_data:
+  emailengine_credentials:
 
 networks:
   icfix-net:
