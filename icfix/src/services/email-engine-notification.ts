@@ -1,4 +1,5 @@
-import { AbstractNotificationService, NotificationServiceContext } from "@medusajs/medusa"
+// EmailEngine Service for Notification Integration
+// This service provides methods to send emails through EmailEngine API
 
 interface EmailEngineConfig {
   apiUrl: string
@@ -6,84 +7,63 @@ interface EmailEngineConfig {
   accountId: string
 }
 
-class EmailEngineNotificationService extends AbstractNotificationService {
-  protected apiUrl_: string
-  protected apiKey_: string
-  protected accountId_: string
+export class EmailEngineService {
+  private apiUrl_: string
+  private apiKey_: string
+  private accountId_: string
 
-  constructor(container: any, options: EmailEngineConfig) {
-    super(container)
+  constructor(options: EmailEngineConfig) {
     this.apiUrl_ = options.apiUrl
     this.apiKey_ = options.apiKey
     this.accountId_ = options.accountId
   }
 
-  async sendNotification(
-    event: string,
-    data: any,
-    recipient: string,
-    options: NotificationServiceContext = {}
-  ): Promise<{ to: string; status: string; data: Record<string, unknown> }> {
-    const emailData = this.prepareEmailData(event, data, recipient)
-
-    try {
-      const response = await fetch(`${this.apiUrl_}/api/account/${this.accountId_}/message`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey_}`,
-          'Content-Type': 'application/json',
+  async sendEmail(
+    to: string,
+    subject: string,
+    html?: string,
+    text?: string,
+    from?: { name: string; address: string }
+  ): Promise<any> {
+    const response = await fetch(`${this.apiUrl_}/api/account/${this.accountId_}/message`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey_}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: from || {
+          name: "Your Store",
+          address: "noreply@yourstore.com"
         },
-        body: JSON.stringify({
-          from: {
-            name: "Your Store",
-            address: "noreply@yourstore.com"
-          },
-          to: [{ address: recipient }],
-          subject: emailData.subject,
-          html: emailData.html,
-          text: emailData.text,
-        }),
-      })
+        to: [{ address: to }],
+        subject,
+        html,
+        text,
+      }),
+    })
 
-      if (!response.ok) {
-        throw new Error(`EmailEngine API error: ${response.statusText}`)
-      }
-
-      const result = await response.json()
-
-      return {
-        to: recipient,
-        status: 'sent',
-        data: result,
-      }
-    } catch (error) {
-      console.error('EmailEngine notification error:', error)
-      throw error
+    if (!response.ok) {
+      throw new Error(`EmailEngine API error: ${response.statusText}`)
     }
+
+    return await response.json()
   }
 
-  private prepareEmailData(event: string, data: any, recipient: string) {
-    // Customize email templates based on the event type
-    switch (event) {
-      case 'order.placed':
-        return {
-          subject: `Order Confirmation #${data.id}`,
-          html: this.generateOrderConfirmationHTML(data),
-          text: this.generateOrderConfirmationText(data),
-        }
-      case 'user.password_reset':
-        return {
-          subject: 'Password Reset Request',
-          html: this.generatePasswordResetHTML(data),
-          text: this.generatePasswordResetText(data),
-        }
-      default:
-        return {
-          subject: 'Notification from Your Store',
-          html: `<p>You have a new notification from your store.</p>`,
-          text: 'You have a new notification from your store.',
-        }
-    }
+  async sendOrderConfirmation(order: any, customerEmail: string): Promise<any> {
+    const subject = `Order Confirmation #${order.id}`
+    const html = this.generateOrderConfirmationHTML(order)
+    const text = this.generateOrderConfirmationText(order)
+
+    return this.sendEmail(customerEmail, subject, html, text)
+  }
+
+  async sendPasswordReset(resetData: any, customerEmail: string): Promise<any> {
+    const subject = 'Password Reset Request'
+    const html = this.generatePasswordResetHTML(resetData)
+    const text = this.generatePasswordResetText(resetData)
+
+    return this.sendEmail(customerEmail, subject, html, text)
   }
 
   private generateOrderConfirmationHTML(order: any): string {
@@ -130,5 +110,4 @@ This link will expire in 24 hours.
   }
 }
 
-export default EmailEngineNotificationService
-
+export default EmailEngineService
