@@ -54,9 +54,13 @@ module.exports = defineConfig({
         SMTP_HOST: process.env.SMTP_HOST,
         SMTP_PORT: parseInt(process.env.SMTP_PORT || "587"),
         SMTP_SECURE: process.env.SMTP_SECURE === "true",
-        SMTP_USER: process.env.SMTP_USER,
+        SMTP_USER: process.env.GMAIL_USER,
         SMTP_PASSWORD: process.env.SMTP_PASSWORD,
         SMTP_FROM: process.env.SMTP_FROM,
+        // Google OAuth Configuration
+        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+        GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+        GOOGLE_REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN,
         TEMPLATES: {
           ORDER_PLACED: {
             subject: "Order Confirmation - #{order.display_id}",
