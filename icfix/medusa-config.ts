@@ -48,6 +48,54 @@ module.exports = defineConfig({
         ],
       },
     },
+    {
+      resolve: "@perseidesjs/notification-nodemailer",
+      options: {
+        SMTP_HOST: process.env.SMTP_HOST,
+        SMTP_PORT: parseInt(process.env.SMTP_PORT || "587"),
+        SMTP_SECURE: process.env.SMTP_SECURE === "true",
+        SMTP_USER: process.env.SMTP_USER,
+        SMTP_PASSWORD: process.env.SMTP_PASSWORD,
+        SMTP_FROM: process.env.SMTP_FROM,
+        TEMPLATES: {
+          ORDER_PLACED: {
+            subject: "Order Confirmation - #{order.display_id}",
+            html: `
+              <h2>Order Confirmation</h2>
+              <p>Thank you for your order!</p>
+              <p><strong>Order ID:</strong> #{order.display_id}</p>
+              <p><strong>Total:</strong> #{order.total_with_tax} #{order.currency_code}</p>
+              <p>We'll send you another email when your order ships.</p>
+            `,
+          },
+          ORDER_SHIPPED: {
+            subject: "Order Shipped - #{order.display_id}",
+            html: `
+              <h2>Order Shipped</h2>
+              <p>Great news! Your order #{order.display_id} has been shipped.</p>
+              <p><strong>Tracking Number:</strong> #{shipment.tracking_number || "N/A"}</p>
+              <p>You can track your package using the tracking number above.</p>
+            `,
+          },
+          ORDER_CANCELED: {
+            subject: "Order Canceled - #{order.display_id}",
+            html: `
+              <h2>Order Canceled</h2>
+              <p>Your order #{order.display_id} has been canceled.</p>
+              <p>If you have any questions, please contact our support team.</p>
+            `,
+          },
+          ORDER_COMPLETED: {
+            subject: "Order Completed - #{order.display_id}",
+            html: `
+              <h2>Order Completed</h2>
+              <p>Your order #{order.display_id} has been completed.</p>
+              <p>Thank you for your business!</p>
+            `,
+          },
+        },
+      },
+    },
   ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
