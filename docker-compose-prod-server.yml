@@ -16,6 +16,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"        # rotate when log file hits 10 MB
+        max-file: "72"
 
   # 2. Redis Cache Service
   redis:
@@ -29,6 +34,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"        # rotate when log file hits 10 MB
+        max-file: "72"
 
   # 3. MeiliSearch Service
   meilisearch:
@@ -45,11 +55,16 @@ services:
       - meilisearch_data:/meili_data
     networks: [icfix-net]
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:7700/version || exit 1"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:7700/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"        # rotate when log file hits 10 MB
+        max-file: "72"
 
   # 4. Medusa Backend Service
   medusa-backend:
@@ -103,6 +118,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"        # rotate when log file hits 10 MB
+        max-file: "72"
 
   # 5. Nginx Reverse Proxy
   nginx:
@@ -120,6 +140,11 @@ services:
       - ./certbot/www:/var/www/certbot
       - ./letsencrypt:/etc/letsencrypt
     networks: [icfix-net]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"        # rotate when log file hits 10 MB
+        max-file: "72"
 
   # 6. EmailEngine Service
   emailengine:
@@ -155,6 +180,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"        # rotate when log file hits 10 MB
+        max-file: "72"
 
   # 7. Certbot for SSL Certificates
   certbot:
