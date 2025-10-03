@@ -91,10 +91,6 @@ services:
       R2_FILE_URL: ${R2_FILE_URL}
       R2_PREFIX: ${R2_PREFIX:-}
       
-      # EmailEngine integration - optional
-      EMAILENGINE_API_URL: ${EMAILENGINE_API_URL:-https://icfix.duckdns.org/email}
-      EMAILENGINE_API_KEY: ${EMAILENGINE_API_KEY}
-      EMAILENGINE_ACCOUNT_ID: ${EMAILENGINE_ACCOUNT_ID}
     expose:
       - "9000"
     networks: [icfix-net]
@@ -121,54 +117,7 @@ services:
       - ./letsencrypt:/etc/letsencrypt
     networks: [icfix-net]
 
-  # 6. EmailEngine Service
-  emailengine:
-    image: postalsys/emailengine:v2
-    container_name: icfix-emailengine
-    restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
-    environment:
-      # Redis connection (required by EmailEngine)
-      EENGINE_REDIS: redis://redis:6379/7
-      
-      # PostgreSQL database connection  
-      EENGINE_DB_CLIENT: postgres
-      EENGINE_DB_HOST: postgres
-      EENGINE_DB_PORT: 5432
-      EENGINE_DB_NAME: ${EMAILENGINE_DB:-emailengine}
-      EENGINE_DB_USER: ${EMAILENGINE_DB_USER:-postgres}
-      EENGINE_DB_PASSWORD: ${EMAILENGINE_DB_PASSWORD:-${POSTGRES_PASSWORD}}
-      
-      # Admin and authentication
-      EENGINE_ADMIN: ${EMAILENGINE_ADMIN_USER:-admin}:${EMAILENGINE_ADMIN_PASS:-admin123}
-      EENGINE_SECRET: ${EMAILENGINE_SECRET:-change-this-secret}
-      
-      # Application URL and webhooks
-      EENGINE_URL: ${EMAILENGINE_API_URL:-https://icfix.duckdns.org/email}
-      EENGINE_WEBHOOK_KEY: ${EMAILENGINE_WEBHOOK_KEY}
-      
-      # Gmail OAuth configuration
-      OAUTH_GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID}
-      OAUTH_GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET}
-      OAUTH_GMAIL_REDIRECT_URI: ${GMAIL_REDIRECT_URI}
-      
-      # Port configuration
-      EENGINE_PORT: 3000
-    ports:
-      - "${EMAILENGINE_PORT:-3000}:3000"
-    volumes:
-      - emailengine_data:/var/lib/emailengine
-    networks: [icfix-net]
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/v1/account"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-
-  # 7. Certbot for SSL Certificates
+  # 6. Certbot for SSL Certificates
   certbot:
     image: certbot/certbot
     container_name: icfix-certbot
@@ -182,8 +131,6 @@ services:
 volumes:
   icfix-pgdata:
   meilisearch_data:
-  emailengine_data:
-  emailengine_credentials:
 
 networks:
   icfix-net:
