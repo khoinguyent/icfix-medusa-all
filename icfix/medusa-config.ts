@@ -51,16 +51,11 @@ module.exports = defineConfig({
     {
       resolve: "@perseidesjs/notification-nodemailer",
       options: {
-        SMTP_HOST: process.env.SMTP_HOST,
-        SMTP_PORT: parseInt(process.env.SMTP_PORT || "587"),
-        SMTP_SECURE: process.env.SMTP_SECURE === "true",
-        SMTP_USER: process.env.GMAIL_USER,
-        SMTP_PASSWORD: process.env.SMTP_PASSWORD,
-        SMTP_FROM: process.env.SMTP_FROM,
         // Google OAuth Configuration
         GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-        GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+        GOOGLE_CORE_SECRET: process.env.GOOGLE_CLIENT_SECRET,
         GOOGLE_REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN,
+        GMAIL_USER: process.env.GMAIL_USER,
         TEMPLATES: {
           ORDER_PLACED: {
             subject: "Order Confirmation - #{order.display_id}",
