@@ -70,7 +70,7 @@ async function handleShippingNotification(shipmentData: any, container: any) {
       const customerEmail = shipment.order.customer.email
       const trackingNumber = shipment.tracking_number || "N/A"
       
-      await emailEngine.sendEmail(
+      await emailService.sendEmail(
         customerEmail,
         "Your order has shipped!",
         `
@@ -108,7 +108,7 @@ async function handlePasswordReset(resetData: any, container: any) {
     }
     
     if (customerEmail) {
-      await emailEngine.sendPasswordReset(resetData, customerEmail)
+      await emailService.sendPasswordReset(resetData, customerEmail)
       console.log(`Password reset email sent to ${customerEmail}`)
     }
   } catch (error) {
