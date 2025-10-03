@@ -12,7 +12,7 @@ services:
       - icfix-pgdata:/var/lib/postgresql/data
     networks: [icfix-net]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}", "-q"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -63,7 +63,7 @@ services:
       redis:
         condition: service_healthy
       meilisearch:
-        condition: service_started
+        condition: service_healthy
     # Expose the port only to the internal Docker network for Nginx to access
     environment:
       MEDUSA_ADMIN_DISABLE: 'true'
@@ -90,6 +90,11 @@ services:
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
       R2_FILE_URL: ${R2_FILE_URL}
       R2_PREFIX: ${R2_PREFIX:-}
+      
+      # EmailEngine integration - optional
+      EMAILENGINE_API_URL: ${EMAILENGINE_API_URL:-https://icfix.duckdns.org/email}
+      EMAILENGINE_API_KEY: ${EMAILENGINE_API_KEY}
+      EMAILENGINE_ACCOUNT_ID: ${EMAILENGINE_ACCOUNT_ID}
     expose:
       - "9000"
     networks: [icfix-net]
@@ -128,11 +133,11 @@ services:
       EENGINE_DB_SERVER: postgres
       EENGINE_DB_PORT: 5432
       EENGINE_DB_NAME: ${EMAILENGINE_DB:-emailengine}
-      EENGINE_DB_USER: ${POSTGRES_USER:-postgres}
-      EENGINE_DB_PASSWORD: ${POSTGRES_PASSWORD:-${POSTGRES_PASSWORD}}
+      EENGINE_DB_USER: ${EMAILENGINE_DB_USER:-postgres}
+      EENGINE_DB_PASSWORD: ${EMAILENGINE_DB_PASSWORD:-${POSTGRES_PASSWORD}}
       EENGINE_ADMIN: ${EMAILENGINE_ADMIN_USER:-admin}:${EMAILENGINE_ADMIN_PASS:-admin123}
       EENGINE_SECRET: ${EMAILENGINE_SECRET:-change-this-secret}
-      EENGINE_URL: https://icfix.duckdns.org/email
+      EENGINE_URL: ${EMAILENGINE_API_URL:-https://icfix.duckdns.org/email}
       EENGINE_WEBHOOK_KEY: ${EMAILENGINE_WEBHOOK_KEY}
       # Gmail OAuth configuration
       OAUTH_GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID}
