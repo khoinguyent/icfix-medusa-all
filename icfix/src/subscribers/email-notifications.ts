@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import EmailEngineService from "../services/email-engine-notification"
+import { Modules } from "@medusajs/framework/utils"
 
 // Initialize EmailEngine service
 const emailEngine = new EmailEngineService({
@@ -46,9 +47,7 @@ async function handleOrderPlaced(orderData: any, container: any) {
     const orderService = container.resolve("order")
     const customerService = container.resolve("customer")
     
-    const order = await orderService.retrieveOrder(orderData.id, {
-      relations: ["customer", CUSTOMER]
-    })
+    const order = await orderService.retrieveOrder(orderData.id)
     
     if (order.customer?.email) {
       await emailEngine.sendOrderConfirmation(order, order.customer.email)
