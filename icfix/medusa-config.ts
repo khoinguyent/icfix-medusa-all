@@ -94,7 +94,7 @@ module.exports = defineConfig({
       options: {
         providers: [
           {
-            resolve: "@medusajs/medusa-payment-manual",
+            resolve: "@medusajs/payment-manual",
             id: "system",
             options: {},
           },
