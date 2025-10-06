@@ -24,7 +24,7 @@
   },
   "include": [
     "**/*",
-    ".medusa/types/*"
+    
   ],
   "exclude": [
     "node_modules",

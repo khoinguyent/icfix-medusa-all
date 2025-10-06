@@ -46,12 +46,13 @@ services:
     volumes:
       - meilisearch_data:/meili_data
     networks: [icfix-net]
+    # ✅ Use the correct /health endpoint for Docker healthcheck
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:7700/version || exit 1"]
+      test: ["CMD-SHELL", "curl -fs http://localhost:7700/health | grep 'available' || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 40s
 
   # 4. Medusa Backend Service
   medusa-backend:

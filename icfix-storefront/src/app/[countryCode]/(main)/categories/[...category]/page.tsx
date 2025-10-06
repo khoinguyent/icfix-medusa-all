@@ -88,7 +88,8 @@ export default async function CategoryPage(props: Props) {
 
   return (
     <CategoryTemplate
-      category={productCategory}
+      categories={await listCategories()}
+      currentCategory={productCategory}
       sortBy={sortBy}
       page={page}
       countryCode={params.countryCode}
