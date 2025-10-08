@@ -19,6 +19,13 @@ RUN npm ci --only=production
 # Copy the rest of your app's source code
 COPY . .
 
+# Install plugin dependencies
+RUN if [ -d "./plugins/notification-gmail-oauth2" ]; then \
+    cd ./plugins/notification-gmail-oauth2 && \
+    npm ci --only=production && \
+    cd ../..; \
+    fi
+
 # Make scripts executable
 RUN chmod +x /app/scripts/wait-for-db.sh
 
