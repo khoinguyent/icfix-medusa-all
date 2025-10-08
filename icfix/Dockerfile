@@ -21,9 +21,14 @@ COPY . .
 
 # Install plugin dependencies
 RUN if [ -d "./plugins/notification-gmail-oauth2" ]; then \
+    echo "Installing plugin dependencies..." && \
     cd ./plugins/notification-gmail-oauth2 && \
+    ls -la && \
     npm ci --only=production && \
+    echo "Plugin dependencies installed successfully" && \
     cd ../..; \
+    else \
+    echo "Plugin directory not found"; \
     fi
 
 # Make scripts executable
