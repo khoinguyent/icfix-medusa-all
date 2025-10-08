@@ -48,16 +48,17 @@ module.exports = defineConfig({
         ],
       },
     },
-    {
-      resolve: "./plugins/notification-gmail-oauth2",
-      options: {
-        user: process.env.GMAIL_USER,
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-        storeName: process.env.STORE_NAME || "Your Store",
-      },
-    },
+    // Temporarily disabled - Docker image doesn't have plugin dependencies installed
+    // {
+    //   resolve: "./plugins/notification-gmail-oauth2",
+    //   options: {
+    //     user: process.env.GMAIL_USER,
+    //     clientId: process.env.GOOGLE_CLIENT_ID,
+    //     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    //     refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+    //     storeName: process.env.STORE_NAME || "Your Store",
+    //   },
+    // },
   ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
