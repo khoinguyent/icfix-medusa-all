@@ -569,9 +569,9 @@ export async function placeOrder(
   await removeCartId()
 
   redirect(
-    `/${response.order.shipping_address?.country_code?.toLowerCase()}/order/confirmed/${
+    `/${response.order.shipping_address?.country_code?.toLowerCase()}/order/${
       response.order.id
-    }`
+    }/confirmed`
   )
 }
 

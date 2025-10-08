@@ -8,6 +8,11 @@ import { HttpTypes } from "@medusajs/types"
 export const retrieveOrder = async (id: string) => {
   const headers = {
     ...(await getAuthHeaders()),
+  } as Record<string, string>
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   // If no authentication headers, return null (user not logged in)
@@ -44,6 +49,11 @@ export const listOrders = async (
 ) => {
   const headers = {
     ...(await getAuthHeaders()),
+  } as Record<string, string>
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   // If no authentication headers, return null (user not logged in)
