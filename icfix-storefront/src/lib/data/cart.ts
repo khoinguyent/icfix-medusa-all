@@ -30,6 +30,11 @@ export async function retrieveCart(id?: string) {
     ...(await getAuthHeaders()),
   }
 
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  }
+
   const next = {
     ...(await getCacheOptions("carts")),
   }
@@ -65,6 +70,11 @@ export async function getOrSetCart(countryCode: string) {
 
   const headers = {
     ...(await getAuthHeaders()),
+  }
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   if (!cart) {
@@ -137,6 +147,11 @@ export async function addToCart({
 
   const headers = {
     ...(await getAuthHeaders()),
+  }
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   await sdk.store.cart
@@ -242,6 +257,11 @@ export async function updateLineItem({
     ...(await getAuthHeaders()),
   }
 
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  }
+
   await sdk.store.cart
     .updateLineItem(cartId, lineId, data, {}, headers)
     .then(async () => {
@@ -265,6 +285,11 @@ export async function deleteLineItem(lineId: string) {
 
   const headers = {
     ...(await getAuthHeaders()),
+  }
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   await sdk.store.cart
@@ -303,6 +328,11 @@ export async function setShippingMethod({
     ...(await getAuthHeaders()),
   }
 
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  }
+
   return sdk.store.cart
     .addShippingMethod(cartId, { option_id: shippingMethodId }, {}, headers)
     .then(async () => {
@@ -321,6 +351,11 @@ export async function initiatePaymentSession(
 ) {
   const headers = {
     ...(await getAuthHeaders()),
+  }
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   return sdk.store.payment
@@ -506,6 +541,11 @@ export async function placeOrder(
     ...(await getAuthHeaders()),
   }
 
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  }
+
   const cartsTag = await getCacheTag("carts")
   const ordersTag = await getCacheTag("orders")
   const approvalsTag = await getCacheTag("approvals")
@@ -567,6 +607,11 @@ export async function createCartApproval(cartId: string, createdBy: string) {
   const headers = {
     "Content-Type": "application/json",
     ...(await getAuthHeaders()),
+  }
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   const { approval } = await sdk.client
