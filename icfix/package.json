@@ -39,7 +39,9 @@
     "@tanstack/react-query": "5.64.2",
     "@tanstack/react-query-devtools": "5.64.2",
     "awilix": "^8.0.1",
+    "googleapis": "^161.0.0",
     "meilisearch": "^0.53.0",
+    "nodemailer": "^7.0.9",
     "pg": "^8.13.0"
   },
   "devDependencies": {
