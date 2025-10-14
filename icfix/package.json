@@ -17,7 +17,12 @@
     "build": "medusa build",
     "build:admin": "medusa build --admin-only",
     "seed": "medusa exec ./src/scripts/seed.ts",
+    "clear-seed": "medusa exec ./src/scripts/clear-seed-data.ts",
+    "reseed": "npm run clear-seed && npm run seed",
     "init-search": "npx ts-node src/scripts/initialize-meilisearch.ts",
+    "create-webhooks": "medusa exec ./src/scripts/create-webhook-via-api.ts",
+    "db:migrate": "medusa db:migrate",
+    "user:create": "medusa user",
     "start": "medusa start",
     "dev": "medusa develop",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
@@ -40,7 +45,9 @@
     "@tanstack/react-query": "5.64.2",
     "@tanstack/react-query-devtools": "5.64.2",
     "awilix": "^8.0.1",
+    "googleapis": "^161.0.0",
     "meilisearch": "^0.53.0",
+    "nodemailer": "^7.0.9",
     "pg": "^8.13.0"
   },
   "devDependencies": {

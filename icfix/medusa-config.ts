@@ -48,6 +48,18 @@ module.exports = defineConfig({
         ],
       },
     },
+    // TODO: Re-enable after fixing ES module to CommonJS conversion
+    // Gmail OAuth2 Email Notification Plugin - Temporarily Disabled
+    // {
+    //   resolve: "./plugins/notification-gmail-oauth2",
+    //   options: {
+    //     user: process.env.GMAIL_USER,
+    //     clientId: process.env.GOOGLE_CLIENT_ID,
+    //     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    //     refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+    //     storeName: process.env.STORE_NAME || "Your Store",
+    //   },
+    // },
   ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
@@ -65,41 +77,5 @@ module.exports = defineConfig({
       sslmode: "disable",
     },
   },
-  modules: [
-    {
-      resolve: "@medusajs/file",
-      options: {
-        providers: [
-          {
-            id: "s3",
-            resolve: "@medusajs/file-s3",
-            options: {
-              endpoint: process.env.R2_ENDPOINT,
-              region: process.env.R2_REGION || "auto",
-              bucket: process.env.R2_BUCKET,
-              access_key_id: process.env.R2_ACCESS_KEY_ID,
-              secret_access_key: process.env.R2_SECRET_ACCESS_KEY,
-              file_url: process.env.R2_FILE_URL,
-              prefix: process.env.R2_PREFIX || "",
-              additional_client_config: {
-                forcePathStyle: true,
-              },
-            },
-          },
-        ],
-      },
-    },
-    {
-      resolve: "@medusajs/medusa/payment",
-      options: {
-        providers: [
-          {
-            resolve: "medusa-payment-manual",
-            id: "system",
-            options: {},
-          },
-        ],
-      },
-    },
-  ]
+  modules: []
 })

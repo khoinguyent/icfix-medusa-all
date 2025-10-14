@@ -46,17 +46,18 @@ services:
     volumes:
       - meilisearch_data:/meili_data
     networks: [icfix-net]
+    # ✅ Use the correct /health endpoint for Docker healthcheck
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:7700/version || exit 1"]
+      test: ["CMD-SHELL", "curl -fs http://localhost:7700/health | grep 'available' || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 40s
 
   # 4. Medusa Backend Service
   medusa-backend:
     # Using the new image built by your GitHub Actions workflow.
-    image: ghcr.io/khoinguyent/icfix-medusa-all:latest
+    image: ghcr.io/khoinguyent/icfix-medusa-all:medusa-meilisearch-426fa4a
     container_name: icfix-backend
     restart: unless-stopped
     depends_on:
@@ -92,6 +93,10 @@ services:
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
       R2_FILE_URL: ${R2_FILE_URL}
       R2_PREFIX: ${R2_PREFIX:-}
+      
+      # Webhook revalidation for storefront cache
+      REVALIDATE_ENDPOINT: ${REVALIDATE_ENDPOINT}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
     expose:
       - "9000"
     networks: [icfix-net]

@@ -28,7 +28,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
   const salesChannelModuleService = container.resolve(Modules.SALES_CHANNEL);
   const storeModuleService = container.resolve(Modules.STORE);
 
-  const countries = ["gb", "de", "dk", "se", "fr", "es", "it"];
+  const countries = ["vn"]; // Vietnam only
 
   logger.info("Seeding store data...");
   const [store] = await storeModuleService.listStores();
@@ -58,11 +58,8 @@ export default async function seedDemoData({ container }: ExecArgs) {
       update: {
         supported_currencies: [
           {
-            currency_code: "eur",
+            currency_code: "vnd",
             is_default: true,
-          },
-          {
-            currency_code: "usd",
           },
         ],
         default_sales_channel_id: defaultSalesChannel[0].id,
@@ -74,10 +71,10 @@ export default async function seedDemoData({ container }: ExecArgs) {
     input: {
       regions: [
         {
-          name: "Europe",
-          currency_code: "eur",
+          name: "Vietnam",
+          currency_code: "vnd",
           countries,
-          payment_providers: ["pp_system_default"],
+          payment_providers: ["pp_system_default"], // COD - Cash on Delivery
         },
       ],
     },
@@ -101,11 +98,11 @@ export default async function seedDemoData({ container }: ExecArgs) {
     input: {
       locations: [
         {
-          name: "European Warehouse",
+          name: "Vietnam Warehouse",
           address: {
-            city: "Copenhagen",
-            country_code: "DK",
-            address_1: "",
+            city: "Ho Chi Minh City",
+            country_code: "VN",
+            address_1: "District 1",
           },
         },
       ],
@@ -144,42 +141,14 @@ export default async function seedDemoData({ container }: ExecArgs) {
   }
 
   const fulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
-    name: "Global Warehouse delivery",
+    name: "Vietnam Warehouse delivery",
     type: "shipping",
     service_zones: [
       {
-        name: "Global",
+        name: "Vietnam",
         geo_zones: [
           {
             country_code: "vn",
-            type: "country",
-          },
-          {
-            country_code: "gb",
-            type: "country",
-          },
-          {
-            country_code: "de",
-            type: "country",
-          },
-          {
-            country_code: "dk",
-            type: "country",
-          },
-          {
-            country_code: "se",
-            type: "country",
-          },
-          {
-            country_code: "fr",
-            type: "country",
-          },
-          {
-            country_code: "es",
-            type: "country",
-          },
-          {
-            country_code: "it",
             type: "country",
           },
         ],
@@ -206,21 +175,17 @@ export default async function seedDemoData({ container }: ExecArgs) {
         shipping_profile_id: shippingProfile.id,
         type: {
           label: "Standard",
-          description: "Ship in 2-3 days.",
+          description: "Giao hàng trong 2-3 ngày (Standard delivery in 2-3 days)",
           code: "standard",
         },
         prices: [
           {
-            currency_code: "usd",
-            amount: 10,
-          },
-          {
-            currency_code: "eur",
-            amount: 10,
+            currency_code: "vnd",
+            amount: 35000, // 35,000 VND
           },
           {
             region_id: region.id,
-            amount: 10,
+            amount: 35000, // 35,000 VND
           },
         ],
         rules: [
@@ -244,21 +209,17 @@ export default async function seedDemoData({ container }: ExecArgs) {
         shipping_profile_id: shippingProfile.id,
         type: {
           label: "Express",
-          description: "Ship in 24 hours.",
+          description: "Giao hàng trong 24 giờ (Express delivery in 24 hours)",
           code: "express",
         },
         prices: [
           {
-            currency_code: "usd",
-            amount: 10,
-          },
-          {
-            currency_code: "eur",
-            amount: 10,
+            currency_code: "vnd",
+            amount: 75000, // 75,000 VND
           },
           {
             region_id: region.id,
-            amount: 10,
+            amount: 75000, // 75,000 VND
           },
         ],
         rules: [
@@ -318,20 +279,24 @@ export default async function seedDemoData({ container }: ExecArgs) {
     input: {
       product_categories: [
         {
-          name: "Shirts",
+          name: "Smartphones",
           is_active: true,
+          description: "Latest smartphones and mobile devices",
         },
         {
-          name: "Sweatshirts",
+          name: "Accessories",
           is_active: true,
+          description: "Phone cases, chargers, and more",
         },
         {
-          name: "Pants",
+          name: "Components",
           is_active: true,
+          description: "Phone batteries, screens, and replacement parts",
         },
         {
-          name: "Merch",
+          name: "Laptops",
           is_active: true,
+          description: "Laptops and computing devices",
         },
       ],
     },
@@ -341,182 +306,141 @@ export default async function seedDemoData({ container }: ExecArgs) {
     input: {
       products: [
         {
-          title: "Medusa T-Shirt",
+          title: "iPhone 15 Pro",
           category_ids: [
-            categoryResult.find((cat) => cat.name === "Shirts")!.id,
+            categoryResult.find((cat) => cat.name === "Smartphones")!.id,
           ],
           description:
-            "Reimagine the feeling of a classic T-shirt. With our cotton T-shirts, everyday essentials no longer have to be ordinary.",
-          handle: "t-shirt",
-          weight: 400,
+            "iPhone 15 Pro with A17 Pro chip, titanium design, and advanced camera system. Experience the most powerful iPhone ever with pro-level performance.",
+          handle: "iphone-15-pro",
+          weight: 187,
           status: ProductStatus.PUBLISHED,
           shipping_profile_id: shippingProfile.id,
           images: [
             {
               url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-black-front.png",
             },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-black-back.png",
-            },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-white-front.png",
-            },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-white-back.png",
-            },
           ],
           options: [
             {
-              title: "Size",
-              values: ["S", "M", "L", "XL"],
+              title: "Storage",
+              values: ["128GB", "256GB", "512GB", "1TB"],
             },
             {
               title: "Color",
-              values: ["Black", "White"],
+              values: ["Natural Titanium", "Blue Titanium", "White Titanium", "Black Titanium"],
             },
           ],
           variants: [
             {
-              title: "S / Black",
-              sku: "SHIRT-S-BLACK",
+              title: "128GB / Natural Titanium",
+              sku: "IPHONE15PRO-128-NAT",
               options: {
-                Size: "S",
-                Color: "Black",
+                Storage: "128GB",
+                Color: "Natural Titanium",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 28900000, // 28,900,000 VND (~$1,199)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "S / White",
-              sku: "SHIRT-S-WHITE",
+              title: "128GB / Blue Titanium",
+              sku: "IPHONE15PRO-128-BLUE",
               options: {
-                Size: "S",
-                Color: "White",
+                Storage: "128GB",
+                Color: "Blue Titanium",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 28900000, // 28,900,000 VND
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "M / Black",
-              sku: "SHIRT-M-BLACK",
+              title: "256GB / Natural Titanium",
+              sku: "IPHONE15PRO-256-NAT",
               options: {
-                Size: "M",
-                Color: "Black",
+                Storage: "256GB",
+                Color: "Natural Titanium",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 32900000, // 32,900,000 VND (~$1,349)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "M / White",
-              sku: "SHIRT-M-WHITE",
+              title: "256GB / Black Titanium",
+              sku: "IPHONE15PRO-256-BLACK",
               options: {
-                Size: "M",
-                Color: "White",
+                Storage: "256GB",
+                Color: "Black Titanium",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 32900000, // 32,900,000 VND
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "L / Black",
-              sku: "SHIRT-L-BLACK",
+              title: "512GB / Natural Titanium",
+              sku: "IPHONE15PRO-512-NAT",
               options: {
-                Size: "L",
-                Color: "Black",
+                Storage: "512GB",
+                Color: "Natural Titanium",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 38900000, // 38,900,000 VND (~$1,599)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "L / White",
-              sku: "SHIRT-L-WHITE",
+              title: "512GB / White Titanium",
+              sku: "IPHONE15PRO-512-WHITE",
               options: {
-                Size: "L",
-                Color: "White",
+                Storage: "512GB",
+                Color: "White Titanium",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 38900000, // 38,900,000 VND
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "XL / Black",
-              sku: "SHIRT-XL-BLACK",
+              title: "1TB / Natural Titanium",
+              sku: "IPHONE15PRO-1TB-NAT",
               options: {
-                Size: "XL",
-                Color: "Black",
+                Storage: "1TB",
+                Color: "Natural Titanium",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 44900000, // 44,900,000 VND (~$1,849)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "XL / White",
-              sku: "SHIRT-XL-WHITE",
+              title: "1TB / Blue Titanium",
+              sku: "IPHONE15PRO-1TB-BLUE",
               options: {
-                Size: "XL",
-                Color: "White",
+                Storage: "1TB",
+                Color: "Blue Titanium",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 44900000, // 44,900,000 VND
+                  currency_code: "vnd",
                 },
               ],
             },
@@ -528,96 +452,77 @@ export default async function seedDemoData({ container }: ExecArgs) {
           ],
         },
         {
-          title: "Medusa Sweatshirt",
+          title: "USB-C Fast Charger 67W",
           category_ids: [
-            categoryResult.find((cat) => cat.name === "Sweatshirts")!.id,
+            categoryResult.find((cat) => cat.name === "Accessories")!.id,
           ],
           description:
-            "Reimagine the feeling of a classic sweatshirt. With our cotton sweatshirt, everyday essentials no longer have to be ordinary.",
-          handle: "sweatshirt",
-          weight: 400,
+            "High-speed 67W USB-C power adapter with GaN technology. Charges your iPhone, iPad, MacBook, and other USB-C devices at optimal speed. Compact and travel-friendly design.",
+          handle: "usbc-fast-charger-67w",
+          weight: 150,
           status: ProductStatus.PUBLISHED,
           shipping_profile_id: shippingProfile.id,
           images: [
             {
               url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatshirt-vintage-front.png",
             },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatshirt-vintage-back.png",
-            },
           ],
           options: [
             {
-              title: "Size",
-              values: ["S", "M", "L", "XL"],
+              title: "Type",
+              values: ["Charger Only", "With USB-C Cable", "With Lightning Cable", "With Both Cables"],
             },
           ],
           variants: [
             {
-              title: "S",
-              sku: "SWEATSHIRT-S",
+              title: "Charger Only",
+              sku: "CHARGER67W-ONLY",
               options: {
-                Size: "S",
+                Type: "Charger Only",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 890000, // 890,000 VND (~$37)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "M",
-              sku: "SWEATSHIRT-M",
+              title: "With USB-C Cable",
+              sku: "CHARGER67W-USBC",
               options: {
-                Size: "M",
+                Type: "With USB-C Cable",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 1290000, // 1,290,000 VND (~$53)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "L",
-              sku: "SWEATSHIRT-L",
+              title: "With Lightning Cable",
+              sku: "CHARGER67W-LIGHT",
               options: {
-                Size: "L",
+                Type: "With Lightning Cable",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 1290000, // 1,290,000 VND
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "XL",
-              sku: "SWEATSHIRT-XL",
+              title: "With Both Cables",
+              sku: "CHARGER67W-BOTH",
               options: {
-                Size: "XL",
+                Type: "With Both Cables",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 1590000, // 1,590,000 VND (~$66)
+                  currency_code: "vnd",
                 },
               ],
             },
@@ -629,96 +534,77 @@ export default async function seedDemoData({ container }: ExecArgs) {
           ],
         },
         {
-          title: "Medusa Sweatpants",
+          title: "iPhone Battery Replacement Kit",
           category_ids: [
-            categoryResult.find((cat) => cat.name === "Pants")!.id,
+            categoryResult.find((cat) => cat.name === "Components")!.id,
           ],
           description:
-            "Reimagine the feeling of classic sweatpants. With our cotton sweatpants, everyday essentials no longer have to be ordinary.",
-          handle: "sweatpants",
-          weight: 400,
+            "High-capacity replacement battery for iPhone with professional installation kit. Includes battery, adhesive strips, and tools. Restore your iPhone's battery life to like-new performance.",
+          handle: "iphone-battery-replacement",
+          weight: 50,
           status: ProductStatus.PUBLISHED,
           shipping_profile_id: shippingProfile.id,
           images: [
             {
               url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatpants-gray-front.png",
             },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatpants-gray-back.png",
-            },
           ],
           options: [
             {
-              title: "Size",
-              values: ["S", "M", "L", "XL"],
+              title: "Model",
+              values: ["iPhone 13", "iPhone 13 Pro", "iPhone 14", "iPhone 14 Pro"],
             },
           ],
           variants: [
             {
-              title: "S",
-              sku: "SWEATPANTS-S",
+              title: "iPhone 13",
+              sku: "BATTERY-IP13",
               options: {
-                Size: "S",
+                Model: "iPhone 13",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 890000, // 890,000 VND (~$37)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "M",
-              sku: "SWEATPANTS-M",
+              title: "iPhone 13 Pro",
+              sku: "BATTERY-IP13PRO",
               options: {
-                Size: "M",
+                Model: "iPhone 13 Pro",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 990000, // 990,000 VND (~$41)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "L",
-              sku: "SWEATPANTS-L",
+              title: "iPhone 14",
+              sku: "BATTERY-IP14",
               options: {
-                Size: "L",
+                Model: "iPhone 14",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 1190000, // 1,190,000 VND (~$49)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "XL",
-              sku: "SWEATPANTS-XL",
+              title: "iPhone 14 Pro",
+              sku: "BATTERY-IP14PRO",
               options: {
-                Size: "XL",
+                Model: "iPhone 14 Pro",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 1290000, // 1,290,000 VND (~$53)
+                  currency_code: "vnd",
                 },
               ],
             },
@@ -730,96 +616,113 @@ export default async function seedDemoData({ container }: ExecArgs) {
           ],
         },
         {
-          title: "Medusa Shorts",
+          title: "MacBook Air M3",
           category_ids: [
-            categoryResult.find((cat) => cat.name === "Merch")!.id,
+            categoryResult.find((cat) => cat.name === "Laptops")!.id,
           ],
           description:
-            "Reimagine the feeling of classic shorts. With our cotton shorts, everyday essentials no longer have to be ordinary.",
-          handle: "shorts",
-          weight: 400,
+            "MacBook Air with M3 chip delivers exceptional performance and battery life in an incredibly thin and light design. Perfect for students, creators, and professionals. Features stunning Retina display and up to 18 hours of battery life.",
+          handle: "macbook-air-m3",
+          weight: 1240,
           status: ProductStatus.PUBLISHED,
           shipping_profile_id: shippingProfile.id,
           images: [
             {
               url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/shorts-vintage-front.png",
             },
-            {
-              url: "https://medusa-public-images.s3.eu-west-1.amazonaws.com/shorts-vintage-back.png",
-            },
           ],
           options: [
             {
-              title: "Size",
-              values: ["S", "M", "L", "XL"],
+              title: "Configuration",
+              values: ["8GB RAM / 256GB SSD", "8GB RAM / 512GB SSD", "16GB RAM / 512GB SSD", "24GB RAM / 1TB SSD"],
+            },
+            {
+              title: "Color",
+              values: ["Midnight", "Starlight", "Space Gray", "Silver"],
             },
           ],
           variants: [
             {
-              title: "S",
-              sku: "SHORTS-S",
+              title: "8GB RAM / 256GB SSD / Midnight",
+              sku: "MBA-M3-8-256-MID",
               options: {
-                Size: "S",
+                Configuration: "8GB RAM / 256GB SSD",
+                Color: "Midnight",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 27900000, // 27,900,000 VND (~$1,149)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "M",
-              sku: "SHORTS-M",
+              title: "8GB RAM / 256GB SSD / Starlight",
+              sku: "MBA-M3-8-256-STAR",
               options: {
-                Size: "M",
+                Configuration: "8GB RAM / 256GB SSD",
+                Color: "Starlight",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 27900000, // 27,900,000 VND
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "L",
-              sku: "SHORTS-L",
+              title: "8GB RAM / 512GB SSD / Space Gray",
+              sku: "MBA-M3-8-512-GRAY",
               options: {
-                Size: "L",
+                Configuration: "8GB RAM / 512GB SSD",
+                Color: "Space Gray",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
-                },
-                {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 32900000, // 32,900,000 VND (~$1,349)
+                  currency_code: "vnd",
                 },
               ],
             },
             {
-              title: "XL",
-              sku: "SHORTS-XL",
+              title: "16GB RAM / 512GB SSD / Silver",
+              sku: "MBA-M3-16-512-SIL",
               options: {
-                Size: "XL",
+                Configuration: "16GB RAM / 512GB SSD",
+                Color: "Silver",
               },
               prices: [
                 {
-                  amount: 10,
-                  currency_code: "eur",
+                  amount: 37900000, // 37,900,000 VND (~$1,549)
+                  currency_code: "vnd",
                 },
+              ],
+            },
+            {
+              title: "16GB RAM / 512GB SSD / Midnight",
+              sku: "MBA-M3-16-512-MID",
+              options: {
+                Configuration: "16GB RAM / 512GB SSD",
+                Color: "Midnight",
+              },
+              prices: [
                 {
-                  amount: 15,
-                  currency_code: "usd",
+                  amount: 37900000, // 37,900,000 VND
+                  currency_code: "vnd",
+                },
+              ],
+            },
+            {
+              title: "24GB RAM / 1TB SSD / Space Gray",
+              sku: "MBA-M3-24-1TB-GRAY",
+              options: {
+                Configuration: "24GB RAM / 1TB SSD",
+                Color: "Space Gray",
+              },
+              prices: [
+                {
+                  amount: 47900000, // 47,900,000 VND (~$1,969)
+                  currency_code: "vnd",
                 },
               ],
             },

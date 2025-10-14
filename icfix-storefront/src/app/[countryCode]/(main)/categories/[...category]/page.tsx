@@ -1,11 +1,14 @@
-import { getCategoryByHandle, listCategories } from "@lib/data/categories"
-import { listRegions } from "@lib/data/regions"
-import CategoryTemplate from "@modules/categories/templates"
-import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
 
-export const dynamicParams = true
+import { getCategoryByHandle, listCategories } from "@lib/data/categories"
+import { listRegions } from "@lib/data/regions"
+import { StoreRegion } from "@medusajs/types"
+import CategoryTemplate from "@modules/categories/templates"
+import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
+
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 type Props = {
   params: Promise<{ category: string[]; countryCode: string }>
@@ -15,19 +18,50 @@ type Props = {
   }>
 }
 
-export async function generateMetadata(props: Props): Promise<Metadata> {
-  const params = await props.params
-
+export async function generateStaticParams() {
   try {
-    const product_category = await getCategoryByHandle(params.category)
+    const product_categories = await listCategories()
 
-    if (!product_category) {
-      notFound()
+    if (!product_categories || product_categories.length === 0) {
+      return []
     }
 
-    const title = product_category.name
+    const countryCodes = await listRegions().then((regions: StoreRegion[]) =>
+      regions?.map((r) => r.countries?.map((c) => c.iso_2)).flat()
+    )
 
-    const description = product_category.description ?? `${title} category.`
+    const categoryHandles = product_categories.map(
+      (category: any) => category.handle
+    )
+
+    const staticParams = countryCodes
+      ?.map((countryCode: string | undefined) =>
+        categoryHandles.map((handle: any) => ({
+          countryCode,
+          category: [handle],
+        }))
+      )
+      .flat()
+
+    return staticParams || []
+  } catch (e) {
+    console.warn("generateStaticParams categories failed, returning []:", e)
+    return []
+  }
+}
+
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params
+  try {
+    const productCategory = await getCategoryByHandle(params.category)
+
+    if (!productCategory) {
+      return {}
+    }
+
+    const title = productCategory.name + " | Medusa Store"
+
+    const description = productCategory.description ?? `${title} category.`
 
     return {
       title: `${title} | Medusa Store`,
@@ -37,33 +71,8 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       },
     }
   } catch (error) {
-    notFound()
+    return {}
   }
-}
-
-export async function generateStaticParams() {
-  const countryCodes = await listRegions().then(
-    (regions) =>
-      regions
-        ?.map((r) => r.countries?.map((c) => c.iso_2))
-        .flat()
-        .filter(Boolean) as string[]
-  )
-
-  if (!countryCodes) {
-    return null
-  }
-
-  const categories = await listCategories()
-
-  return countryCodes
-    .map((countryCode) =>
-      categories.map((category) => ({
-        countryCode,
-        category: category.handle.split("/"),
-      }))
-    )
-    .flat()
 }
 
 export default async function CategoryPage(props: Props) {
@@ -71,20 +80,16 @@ export default async function CategoryPage(props: Props) {
   const params = await props.params
   const { sortBy, page } = searchParams
 
-  const categories = await listCategories()
+  const productCategory = await getCategoryByHandle(params.category)
 
-  const currentCategory = categories.find(
-    (category) => category.handle === params.category.join("/")
-  )
-
-  if (!currentCategory) {
+  if (!productCategory) {
     notFound()
   }
 
   return (
     <CategoryTemplate
-      categories={categories}
-      currentCategory={currentCategory}
+      categories={await listCategories()}
+      currentCategory={productCategory}
       sortBy={sortBy}
       page={page}
       countryCode={params.countryCode}
