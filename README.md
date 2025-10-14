@@ -306,3 +306,4 @@ For detailed setup instructions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)**
 **License:** MIT
 
 # Trigger Vercel rebuild - Tue Oct 14 14:45:35 +07 2025
+# Fix: Add missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY to Vercel - Tue Oct 14 15:02:19 +07 2025
