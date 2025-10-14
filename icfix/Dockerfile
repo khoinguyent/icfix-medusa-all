@@ -19,16 +19,23 @@ RUN npm ci --only=production
 # Copy the rest of your app's source code
 COPY . .
 
-# Install plugin dependencies
-RUN if [ -d "./plugins/notification-gmail-oauth2" ]; then \
-    echo "Installing plugin dependencies..." && \
-    cd ./plugins/notification-gmail-oauth2 && \
-    ls -la && \
-    npm ci --only=production && \
-    echo "Plugin dependencies installed successfully" && \
-    cd ../..; \
+# Verify plugin directory exists and install dependencies
+RUN echo "Checking for plugins..." && \
+    ls -la ./plugins/ || echo "No plugins directory" && \
+    if [ -d "./plugins/notification-gmail-oauth2" ]; then \
+        echo "Found notification-gmail-oauth2 plugin" && \
+        ls -la ./plugins/notification-gmail-oauth2/ && \
+        if [ -f "./plugins/notification-gmail-oauth2/package.json" ]; then \
+            echo "Installing plugin dependencies..." && \
+            cd ./plugins/notification-gmail-oauth2 && \
+            npm ci --only=production && \
+            echo "Plugin dependencies installed successfully" && \
+            cd ../..; \
+        else \
+            echo "ERROR: Plugin package.json not found!"; \
+        fi; \
     else \
-    echo "Plugin directory not found"; \
+        echo "WARNING: Plugin directory not found"; \
     fi
 
 # Make scripts executable

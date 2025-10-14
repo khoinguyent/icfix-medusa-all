@@ -1,0 +1,55 @@
+# Dependencies
+node_modules
+*/node_modules
+
+# Build output
+dist
+build
+.medusa
+.cache
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+.git
+.gitignore
+README.md
+*.md
+!plugins/*/README.md
+
+# Uploads (runtime generated)
+uploads
+
+# Keep plugins directory and its package.json files
+!plugins
+!plugins/*/
+!plugins/*/package.json
+!plugins/*/package-lock.json
+!plugins/*/*.js
+!plugins/*/index.js
+!plugins/*/templates
+!plugins/*/templates/*
+
