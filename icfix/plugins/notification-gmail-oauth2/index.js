@@ -1,11 +1,7 @@
-import nodemailer from 'nodemailer';
-import { google } from 'googleapis';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Gmail OAuth2 Notification Plugin for Medusa
@@ -278,11 +274,11 @@ class GmailNotificationService {
   }
 }
 
-// Export the service class
-export default GmailNotificationService;
+// Export the service class (CommonJS)
+module.exports = GmailNotificationService;
 
 // Medusa plugin loader function
-export const loaders = [
+module.exports.loaders = [
   {
     name: 'gmail-notification-loader',
     func: async (container, options) => {

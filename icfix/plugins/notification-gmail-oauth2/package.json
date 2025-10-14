@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Gmail OAuth2 notification plugin for Medusa - sends emails via Gmail API over HTTPS",
   "main": "index.js",
-  "type": "module",
   "keywords": [
     "medusa",
     "plugin",
