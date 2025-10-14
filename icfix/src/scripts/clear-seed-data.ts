@@ -142,9 +142,10 @@ export default async function clearSeedData({ container }: ExecArgs) {
 
     // 7. Delete Sales Channels (except Default)
     logger.info("Deleting sales channels (except default)...");
-    const salesChannels = await salesChannelModuleService.listSalesChannels({
-      name: { $ne: "Default Sales Channel" },
-    });
+    const allSalesChannels = await salesChannelModuleService.listSalesChannels();
+    const salesChannels = allSalesChannels.filter(
+      (channel) => channel.name !== "Default Sales Channel"
+    );
 
     if (salesChannels.length > 0) {
       for (const channel of salesChannels) {
@@ -157,9 +158,10 @@ export default async function clearSeedData({ container }: ExecArgs) {
 
     // 8. Delete Shipping Profiles (except default)
     logger.info("Deleting shipping profiles (except default)...");
-    const shippingProfiles = await fulfillmentModuleService.listShippingProfiles({
-      type: { $ne: "default" },
-    });
+    const allShippingProfiles = await fulfillmentModuleService.listShippingProfiles();
+    const shippingProfiles = allShippingProfiles.filter(
+      (profile) => profile.type !== "default"
+    );
 
     if (shippingProfiles.length > 0) {
       for (const profile of shippingProfiles) {
