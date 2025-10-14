@@ -57,7 +57,7 @@ services:
   # 4. Medusa Backend Service
   medusa-backend:
     # Using the new image built by your GitHub Actions workflow.
-    image: ghcr.io/khoinguyent/icfix-medusa-all:medusa-meilisearch-d9ea052
+    image: ghcr.io/khoinguyent/icfix-medusa-all:medusa-meilisearch-426fa4a
     container_name: icfix-backend
     restart: unless-stopped
     depends_on:
