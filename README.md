@@ -307,3 +307,4 @@ For detailed setup instructions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)**
 
 # Trigger Vercel rebuild - Tue Oct 14 14:45:35 +07 2025
 # Fix: Add missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY to Vercel - Tue Oct 14 15:02:19 +07 2025
+# Fix: Use correct publishable key from admin dashboard - Tue Oct 14 15:16:34 +07 2025
