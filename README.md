@@ -305,3 +305,4 @@ For detailed setup instructions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)**
 **Version:** 1.0.0  
 **License:** MIT
 
+# Trigger Vercel rebuild - Tue Oct 14 14:45:35 +07 2025
