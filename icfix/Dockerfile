@@ -20,22 +20,35 @@ RUN npm ci --only=production
 COPY . .
 
 # Verify plugin directory exists and install dependencies
-RUN echo "Checking for plugins..." && \
-    ls -la ./plugins/ || echo "No plugins directory" && \
+RUN echo "=== PLUGIN VERIFICATION ===" && \
+    echo "Checking for plugins directory..." && \
+    ls -la ./plugins/ && \
+    echo "" && \
     if [ -d "./plugins/notification-gmail-oauth2" ]; then \
-        echo "Found notification-gmail-oauth2 plugin" && \
+        echo "✓ Found notification-gmail-oauth2 plugin" && \
+        echo "Plugin contents:" && \
         ls -la ./plugins/notification-gmail-oauth2/ && \
+        echo "" && \
         if [ -f "./plugins/notification-gmail-oauth2/package.json" ]; then \
+            echo "✓ Plugin package.json exists" && \
             echo "Installing plugin dependencies..." && \
             cd ./plugins/notification-gmail-oauth2 && \
             npm ci --only=production && \
-            echo "Plugin dependencies installed successfully" && \
-            cd ../..; \
+            echo "✓ Plugin dependencies installed successfully" && \
+            cd ../.. && \
+            echo "" && \
+            echo "Final verification - Plugin files:" && \
+            ls -la ./plugins/notification-gmail-oauth2/ && \
+            echo "=== PLUGIN SETUP COMPLETE ==="; \
         else \
-            echo "ERROR: Plugin package.json not found!"; \
+            echo "✗ ERROR: Plugin package.json not found!" && \
+            exit 1; \
         fi; \
     else \
-        echo "WARNING: Plugin directory not found"; \
+        echo "✗ ERROR: Plugin directory not found!" && \
+        echo "Available directories:" && \
+        ls -la . && \
+        exit 1; \
     fi
 
 # Make scripts executable
