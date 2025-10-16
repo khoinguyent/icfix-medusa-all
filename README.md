@@ -4,6 +4,32 @@ Complete e-commerce platform built with Medusa v2 and Next.js, configured for Vi
 
 ---
 
+## 🤖 NEW: Automated Build Failure Detection & Fixing
+
+**Get build errors fixed by AI automatically!**
+
+```bash
+# One-time setup (2 minutes)
+./scripts/setup-automation.sh
+
+# Then either:
+./scripts/watch-builds.sh        # Auto-monitor builds
+# OR
+./scripts/auto-fix-build.sh      # Quick one-time fix
+```
+
+**How it works:**
+1. Build fails in GitHub Actions
+2. Script auto-fetches logs
+3. Opens in Cursor with formatted report
+4. Tell Cursor: "Fix these errors"
+5. Cursor analyzes and fixes automatically
+6. Push → Rebuild → Fixed! ✅
+
+**⚡ Time to fix: ~5 minutes** | **📖 [Read the Quickstart →](./AUTOMATION_SETUP_QUICKSTART.md)**
+
+---
+
 ## 📚 Documentation
 
 ### **Main Deployment Guide**
@@ -230,6 +256,10 @@ docker-compose -f docker-compose-prod.yml ps
 
 ### Core Documentation
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide ⭐
+- **[AUTOMATION_SETUP_QUICKSTART.md](./AUTOMATION_SETUP_QUICKSTART.md)** - Get automation running in 5 minutes ⚡
+- **[AUTOMATION_GUIDE.md](./AUTOMATION_GUIDE.md)** - Complete automation setup & options 🤖
+- **[QUICK_DEBUG_GUIDE.md](./QUICK_DEBUG_GUIDE.md)** - One-page quick reference 📋
+- **[GITHUB_ACTIONS_DEBUG.md](./GITHUB_ACTIONS_DEBUG.md)** - Detailed debugging guide 🐛
 
 ### Component Documentation
 - [Backend README](./icfix/README.md) - Backend-specific docs

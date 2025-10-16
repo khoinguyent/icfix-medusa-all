@@ -10,11 +10,44 @@ export default async function emailNotificationsHandler({
   const logger = container.resolve("logger")
   
   try {
-    // Get the Gmail notification service from the plugin
-    const gmailService = container.resolve("gmailNotificationService")
+    // Try to get the notification module service first (Medusa v2 pattern)
+    let notificationModuleService
+    let gmailService
+    
+    try {
+      notificationModuleService = container.resolve("notificationModuleService")
+    } catch (error) {
+      // Fall back to direct service resolution
+      logger.debug("Notification module service not found, trying direct service resolution")
+    }
+
+    // If notification module is available, get the Gmail provider
+    if (notificationModuleService) {
+      // We'll use the notification module service to send notifications
+      logger.info(`📧 Using notification module service for event: ${name}`)
+      
+      // For Medusa v2, we can use the notification module service
+      // but we also need to maintain backward compatibility
+      // so we'll resolve the provider service directly
+      try {
+        gmailService = container.resolve("notification-gmail-oauth2")
+      } catch (error) {
+        logger.warn("Gmail notification provider not found in container")
+      }
+    }
+    
+    // Fall back to legacy resolution if needed
+    if (!gmailService) {
+      try {
+        gmailService = container.resolve("gmailNotificationService")
+      } catch (error) {
+        logger.warn("Gmail notification service not found. Make sure the plugin is properly loaded.")
+        return
+      }
+    }
     
     if (!gmailService) {
-      logger.warn("Gmail notification service not found. Make sure the plugin is properly loaded.")
+      logger.warn("Gmail notification service not available")
       return
     }
 

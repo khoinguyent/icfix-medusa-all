@@ -77,5 +77,26 @@ module.exports = defineConfig({
       sslmode: "disable",
     },
   },
-  modules: []
+  modules: [
+    {
+      resolve: "@medusajs/medusa/notification",
+      options: {
+        providers: [
+          {
+            resolve: "./plugins/notification-gmail-oauth2",
+            id: "notification-gmail-oauth2",
+            options: {
+              channels: ["email"],
+              user: process.env.GMAIL_USER,
+              clientId: process.env.GOOGLE_CLIENT_ID,
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+              refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+              storeName: process.env.STORE_NAME || "Your Store",
+              storeUrl: process.env.STORE_URL || "https://yourstore.com",
+            },
+          },
+        ],
+      },
+    },
+  ]
 })

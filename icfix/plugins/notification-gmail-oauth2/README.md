@@ -1,6 +1,8 @@
-# Gmail OAuth2 Notification Plugin
+# Gmail OAuth2 Notification Plugin for Medusa v2
 
-A production-ready Medusa plugin that sends transactional emails using Gmail API OAuth2 over HTTPS. No SMTP ports required!
+A production-ready Medusa v2 plugin that sends transactional emails using Gmail API OAuth2 over HTTPS. No SMTP ports required!
+
+> ⚡ **Updated for Medusa v2** - Now uses the official Medusa v2 notification module pattern
 
 ## 🚀 Features
 
@@ -18,13 +20,22 @@ A production-ready Medusa plugin that sends transactional emails using Gmail API
 - **Order Canceled** - Cancellation confirmation with refund info
 - **Password Reset** - Secure password reset link
 
-## 🔧 Setup
+## 🔧 Quick Setup
+
+### Quick Start (5 minutes)
+
+See [GMAIL_OAUTH2_QUICK_START.md](../../../GMAIL_OAUTH2_QUICK_START.md) for a fast setup guide.
+
+### Detailed Setup
+
+See [GMAIL_OAUTH2_SETUP_GUIDE.md](../../../GMAIL_OAUTH2_SETUP_GUIDE.md) for comprehensive instructions with troubleshooting.
 
 ### Step 1: Install Dependencies
 
 ```bash
 cd plugins/notification-gmail-oauth2
 npm install
+npm run build
 ```
 
 ### Step 2: Configure Gmail OAuth2
@@ -76,18 +87,28 @@ STORE_URL=https://yourstore.com
 
 ### Step 4: Plugin Configuration
 
-The plugin is already configured in `medusa-config.ts`:
+The plugin is configured in `medusa-config.ts` as a notification module provider:
 
 ```typescript
-plugins: [
+modules: [
   {
-    resolve: "./plugins/notification-gmail-oauth2",
+    resolve: "@medusajs/medusa/notification",
     options: {
-      user: process.env.GMAIL_USER,
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-      storeName: process.env.STORE_NAME || "Your Store",
+      providers: [
+        {
+          resolve: "./plugins/notification-gmail-oauth2",
+          id: "notification-gmail-oauth2",
+          options: {
+            channels: ["email"],
+            user: process.env.GMAIL_USER,
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+            storeName: process.env.STORE_NAME || "Your Store",
+            storeUrl: process.env.STORE_URL || "https://yourstore.com",
+          },
+        },
+      ],
     },
   },
 ]
