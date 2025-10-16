@@ -19,37 +19,24 @@ RUN npm ci --only=production
 # Copy the rest of your app's source code
 COPY . .
 
-# Verify plugin directory exists and install dependencies
-RUN echo "=== PLUGIN VERIFICATION ===" && \
-    echo "Checking for plugins directory..." && \
-    ls -la ./plugins/ && \
-    echo "" && \
-    if [ -d "./plugins/notification-gmail-oauth2" ]; then \
-        echo "✓ Found notification-gmail-oauth2 plugin" && \
-        echo "Plugin contents:" && \
-        ls -la ./plugins/notification-gmail-oauth2/ && \
-        echo "" && \
-        if [ -f "./plugins/notification-gmail-oauth2/package.json" ]; then \
-            echo "✓ Plugin package.json exists" && \
-            echo "Installing plugin dependencies..." && \
-            cd ./plugins/notification-gmail-oauth2 && \
-            npm ci --only=production && \
-            echo "✓ Plugin dependencies installed successfully" && \
-            cd ../.. && \
+# Install plugin dependencies for all plugins with package.json
+RUN echo "=== PLUGIN SETUP ===" && \
+    echo "Installing dependencies for all plugins..." && \
+    for plugin_dir in ./plugins/*/ ; do \
+        if [ -f "${plugin_dir}package.json" ]; then \
+            plugin_name=$(basename "$plugin_dir") && \
             echo "" && \
-            echo "Final verification - Plugin files:" && \
-            ls -la ./plugins/notification-gmail-oauth2/ && \
-            echo "=== PLUGIN SETUP COMPLETE ==="; \
-        else \
-            echo "✗ ERROR: Plugin package.json not found!" && \
-            exit 1; \
+            echo "Installing dependencies for: $plugin_name" && \
+            cd "$plugin_dir" && \
+            npm install --only=production && \
+            echo "✓ $plugin_name dependencies installed" && \
+            cd /app; \
         fi; \
-    else \
-        echo "✗ ERROR: Plugin directory not found!" && \
-        echo "Available directories:" && \
-        ls -la . && \
-        exit 1; \
-    fi
+    done && \
+    echo "" && \
+    echo "=== PLUGIN SETUP COMPLETE ===" && \
+    echo "Installed plugins:" && \
+    ls -la ./plugins/
 
 # Make scripts executable
 RUN chmod +x /app/scripts/wait-for-db.sh
