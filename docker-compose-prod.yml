@@ -56,8 +56,14 @@ services:
 
   # 4. Medusa Backend Service
   medusa-backend:
-    # Using the new image built by your GitHub Actions workflow.
-    image: ghcr.io/khoinguyent/icfix-medusa-all:medusa-meilisearch-426fa4a
+    # Docker image from GitHub Container Registry (GHCR)
+    # Available tags:
+    #   :latest           - Latest build from main branch (recommended for production)
+    #   :main             - Latest main branch build
+    #   :abc1234          - Specific commit SHA (for rollback/pinning)
+    #   :main-abc1234     - Branch + commit SHA
+    # Default to :latest for automatic updates, or pin to a specific SHA for stability
+    image: ghcr.io/khoinguyent/icfix-medusa-all:latest
     container_name: icfix-backend
     restart: unless-stopped
     depends_on:

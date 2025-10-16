@@ -48,18 +48,18 @@ module.exports = defineConfig({
         ],
       },
     },
-    // TODO: Re-enable after fixing ES module to CommonJS conversion
-    // Gmail OAuth2 Email Notification Plugin - Temporarily Disabled
-    // {
-    //   resolve: "./plugins/notification-gmail-oauth2",
-    //   options: {
-    //     user: process.env.GMAIL_USER,
-    //     clientId: process.env.GOOGLE_CLIENT_ID,
-    //     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    //     refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-    //     storeName: process.env.STORE_NAME || "Your Store",
-    //   },
-    // },
+    // Gmail OAuth2 Email Notification Plugin
+    {
+      resolve: "./plugins/notification-gmail-oauth2",
+      options: {
+        user: process.env.GMAIL_USER,
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+        storeName: process.env.STORE_NAME || "Your Store",
+        storeUrl: process.env.STORE_URL || "https://yourstore.com",
+      },
+    },
   ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
@@ -77,26 +77,5 @@ module.exports = defineConfig({
       sslmode: "disable",
     },
   },
-  modules: [
-    {
-      resolve: "@medusajs/medusa/notification",
-      options: {
-        providers: [
-          {
-            resolve: "./plugins/notification-gmail-oauth2",
-            id: "notification-gmail-oauth2",
-            options: {
-              channels: ["email"],
-              user: process.env.GMAIL_USER,
-              clientId: process.env.GOOGLE_CLIENT_ID,
-              clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-              refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-              storeName: process.env.STORE_NAME || "Your Store",
-              storeUrl: process.env.STORE_URL || "https://yourstore.com",
-            },
-          },
-        ],
-      },
-    },
-  ]
+  modules: []
 })

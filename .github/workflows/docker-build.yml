@@ -37,10 +37,16 @@ jobs:
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
+          # Tag with branch name (e.g., main, medusa-meilisearch)
           type=ref,event=branch
+          # Tag PRs with pr-<number>
           type=ref,event=pr
+          # Tag with commit SHA for traceability (e.g., main-abc1234)
           type=sha,prefix={{branch}}-
+          # Always tag main branch as 'latest'
           type=raw,value=latest,enable={{is_default_branch}}
+          # Tag with short SHA (e.g., abc1234)
+          type=sha,format=short
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
