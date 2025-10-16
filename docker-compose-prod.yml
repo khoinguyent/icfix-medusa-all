@@ -62,8 +62,8 @@ services:
     #   :main             - Latest main branch build
     #   :sha-abc1234      - Specific commit SHA (for rollback/pinning)
     #   :main-abc1234     - Branch + commit SHA
-    # Final working image with .dockerignore fix
-    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-88b259f
+    # Image with simplified .dockerignore (ALL plugin files included)
+    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-365fd1e
     container_name: icfix-backend
     restart: unless-stopped
     depends_on:
