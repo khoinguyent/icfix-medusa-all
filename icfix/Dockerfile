@@ -44,6 +44,13 @@ RUN chmod +x /app/scripts/wait-for-db.sh
 # Build the project
 RUN npm run build
 
+# Copy plugins to .medusa/server after build so they can be resolved
+RUN echo "Copying plugins to .medusa/server..." && \
+    mkdir -p ./.medusa/server/plugins && \
+    cp -r ./plugins/* ./.medusa/server/plugins/ && \
+    echo "✓ Plugins copied to .medusa/server/plugins" && \
+    ls -la ./.medusa/server/plugins/
+
 # Create a non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S medusa -u 1001
