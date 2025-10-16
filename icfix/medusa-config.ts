@@ -48,19 +48,18 @@ module.exports = defineConfig({
         ],
       },
     },
-    // TODO: Email notifications - temporarily disabled to allow backend to start
-    // Will implement as a service instead of plugin to avoid resolution issues
-    // {
-    //   resolve: "./plugins/notification-gmail-oauth2",
-    //   options: {
-    //     user: process.env.GMAIL_USER,
-    //     clientId: process.env.GOOGLE_CLIENT_ID,
-    //     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    //     refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-    //     storeName: process.env.STORE_NAME || "Your Store",
-    //     storeUrl: process.env.STORE_URL || "https://yourstore.com",
-    //   },
-    // },
+    // Gmail OAuth2 Email Notification Plugin
+    {
+      resolve: "./plugins/notification-gmail-oauth2",
+      options: {
+        user: process.env.GMAIL_USER,
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+        storeName: process.env.STORE_NAME || "Your Store",
+        storeUrl: process.env.STORE_URL || "https://yourstore.com",
+      },
+    },
   ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,

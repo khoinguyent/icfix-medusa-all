@@ -1,6 +1,5 @@
-# Dependencies
+# Dependencies - but NOT in plugins subdirectories
 node_modules
-*/node_modules
 
 # Build output
 dist
@@ -36,23 +35,9 @@ coverage
 # Misc
 .git
 .gitignore
-README.md
-*.md
-!plugins/*/README.md
 
 # Uploads (runtime generated)
 uploads
 
-# Keep ALL plugin files (override previous ignores)
-!plugins
-!plugins/**
-!plugins/**/package.json
-!plugins/**/package-lock.json
-!plugins/**/*.js
-!plugins/**/index.js
-!plugins/**/templates
-!plugins/**/templates/*
-!plugins/**/templates/**
-!plugins/**/services
-!plugins/**/services/*
+# NOTE: DO NOT ignore plugins directory - we need ALL plugin files
 
