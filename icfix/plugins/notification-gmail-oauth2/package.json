@@ -2,11 +2,10 @@
   "name": "medusa-plugin-notification-gmail-oauth2",
   "version": "2.0.0",
   "description": "Gmail OAuth2 notification plugin for Medusa v2 - sends emails via Gmail API over HTTPS",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch"
+    "build": "echo 'Using pre-built CommonJS version'",
+    "watch": "echo 'Using pre-built CommonJS version'"
   },
   "keywords": [
     "medusa",

@@ -33,3 +33,4 @@ out/
 
 # Docker
 docker-compose-prod.yml
+logs/
