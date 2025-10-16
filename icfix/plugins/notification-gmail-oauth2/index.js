@@ -267,8 +267,31 @@ class GmailNotificationService {
   }
 }
 
-// Export as default for Medusa v2
+// Export the service class
 module.exports = GmailNotificationService;
 
-// Also export for service registration
+// Export default for ES module compatibility
 module.exports.default = GmailNotificationService;
+
+// Medusa plugin loaders - registers the service in the container
+module.exports.loaders = [
+  {
+    name: 'gmail-notification-loader',
+    func: async (container, options) => {
+      try {
+        const gmailService = new GmailNotificationService(container, options);
+        
+        // Register in container for backward compatibility with subscribers
+        container.register({
+          gmailNotificationService: {
+            resolve: () => gmailService,
+          },
+        });
+        
+        container.logger.info('✅ Gmail Notification Service registered in container');
+      } catch (error) {
+        container.logger.error('❌ Failed to load Gmail notification service:', error.message);
+      }
+    },
+  },
+];

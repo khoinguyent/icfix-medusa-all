@@ -34,6 +34,7 @@ if ! docker info &> /dev/null; then
 fi
 
 echo -e "${GREEN}📦 Pulling latest images...${NC}"
+docker pull ghcr.io/khoinguyent/icfix-medusa-all:latest
 docker-compose -f docker-compose-prod.yml pull
 
 echo -e "${GREEN}🏗️  Building and starting services...${NC}"
