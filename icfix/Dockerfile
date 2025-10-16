@@ -44,11 +44,11 @@ RUN chmod +x /app/scripts/wait-for-db.sh
 # Build the project
 RUN npm run build
 
-# Copy plugins to .medusa/server after build so they can be resolved
-RUN echo "Copying plugins to .medusa/server..." && \
-    mkdir -p ./.medusa/server/plugins && \
-    cp -r ./plugins/* ./.medusa/server/plugins/ && \
-    echo "✓ Plugins copied to .medusa/server/plugins" && \
+# Create symlink from .medusa/server/plugins to main plugins directory
+# This allows Medusa to find plugins from the build directory
+RUN mkdir -p ./.medusa/server && \
+    ln -s /app/plugins ./.medusa/server/plugins && \
+    echo "✓ Created symlink: .medusa/server/plugins -> /app/plugins" && \
     ls -la ./.medusa/server/plugins/
 
 # Create a non-root user for security
