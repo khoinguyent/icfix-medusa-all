@@ -43,13 +43,16 @@ README.md
 # Uploads (runtime generated)
 uploads
 
-# Keep plugins directory and its package.json files
+# Keep ALL plugin files (override previous ignores)
 !plugins
-!plugins/*/
-!plugins/*/package.json
-!plugins/*/package-lock.json
-!plugins/*/*.js
-!plugins/*/index.js
-!plugins/*/templates
-!plugins/*/templates/*
+!plugins/**
+!plugins/**/package.json
+!plugins/**/package-lock.json
+!plugins/**/*.js
+!plugins/**/index.js
+!plugins/**/templates
+!plugins/**/templates/*
+!plugins/**/templates/**
+!plugins/**/services
+!plugins/**/services/*
 

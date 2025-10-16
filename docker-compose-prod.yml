@@ -62,8 +62,8 @@ services:
     #   :main             - Latest main branch build
     #   :sha-abc1234      - Specific commit SHA (for rollback/pinning)
     #   :main-abc1234     - Branch + commit SHA
-    # Using latest working image with Nodemailer plugin
-    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-aaf60d0
+    # Using working Gmail OAuth2 plugin (notification-gmail-oauth2)
+    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-4812034
     container_name: icfix-backend
     restart: unless-stopped
     depends_on:
