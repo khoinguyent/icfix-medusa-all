@@ -48,15 +48,11 @@ module.exports = defineConfig({
         ],
       },
     },
-    // Nodemailer Email Notification Plugin
+    // Gmail OAuth2 Email Notification Plugin (using working implementation)
     {
-      resolve: "./plugins/notification-nodemailer",
+      resolve: "./plugins/notification-gmail-oauth2",
       options: {
-        authType: process.env.GMAIL_AUTH_TYPE || "oauth2",
-        smtpHost: process.env.SMTP_HOST || "smtp.gmail.com",
-        smtpPort: parseInt(process.env.SMTP_PORT || "465"),
         user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
         clientId: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
