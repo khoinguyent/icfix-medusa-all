@@ -38,6 +38,7 @@
     "@medusajs/icons": "2.10.1",
     "@medusajs/medusa": "2.10.1",
     "medusa-payment-manual": "^1.0.25",
+    "medusa-plugin-notification-gmail-oauth2": "file:./plugins/notification-gmail-oauth2",
     "@mikro-orm/core": "6.4.3",
     "@mikro-orm/knex": "6.4.3",
     "@mikro-orm/migrations": "6.4.3",

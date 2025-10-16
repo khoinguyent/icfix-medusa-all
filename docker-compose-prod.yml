@@ -62,8 +62,8 @@ services:
     #   :main             - Latest main branch build
     #   :sha-abc1234      - Specific commit SHA (for rollback/pinning)
     #   :main-abc1234     - Branch + commit SHA
-    # FINAL FIX: Plugins copied to .medusa/server/plugins
-    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-86219a5
+    # WORKING: Symlink from .medusa/server/plugins to /app/plugins
+    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-3c83e31
     container_name: icfix-backend
     restart: unless-stopped
     depends_on:

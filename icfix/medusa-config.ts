@@ -48,9 +48,9 @@ module.exports = defineConfig({
         ],
       },
     },
-    // Gmail OAuth2 Email Notification Plugin
+    // Gmail OAuth2 Email Notification Plugin  
     {
-      resolve: "./plugins/notification-gmail-oauth2",
+      resolve: "medusa-plugin-notification-gmail-oauth2",
       options: {
         user: process.env.GMAIL_USER,
         clientId: process.env.GOOGLE_CLIENT_ID,
