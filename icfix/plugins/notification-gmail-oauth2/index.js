@@ -279,18 +279,17 @@ module.exports.loaders = [
     name: 'gmail-notification-loader',
     func: async (container, options) => {
       try {
-        const gmailService = new GmailNotificationService(container, options);
-        
-        // Register in container for backward compatibility with subscribers
+        // Create and register the Gmail service using Awilix
         container.register({
-          gmailNotificationService: {
-            resolve: () => gmailService,
-          },
+          gmailNotificationService: require('awilix').asFunction((cradle) => {
+            return new GmailNotificationService(cradle, options);
+          }).singleton(),
         });
         
         container.logger.info('✅ Gmail Notification Service registered in container');
       } catch (error) {
         container.logger.error('❌ Failed to load Gmail notification service:', error.message);
+        container.logger.error(error);
       }
     },
   },
