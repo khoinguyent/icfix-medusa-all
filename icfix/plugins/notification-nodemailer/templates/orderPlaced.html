@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300;">Order Confirmation</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Thank you for your purchase!</p>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+            <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px;">Hello {{customerName}}!</h2>
+            
+            <p style="color: #666666; line-height: 1.6; margin: 0 0 25px 0; font-size: 16px;">
+                Thank you for your order! We've received your order and will process it shortly. 
+                You'll receive another email when your order ships.
+            </p>
+
+            <!-- Order Details Box -->
+            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0; border-left: 4px solid #667eea;">
+                <h3 style="color: #333333; margin: 0 0 15px 0; font-size: 18px;">Order Details</h3>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #666666; font-weight: 500;">Order Number:</span>
+                    <span style="color: #333333; font-weight: 600;">#{{orderId}}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #666666; font-weight: 500;">Total Amount:</span>
+                    <span style="color: #333333; font-weight: 600;">{{currency}} {{orderTotal}}</span>
+                </div>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{orderUrl}}" style="background-color: #667eea; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">
+                    View Order Details
+                </a>
+            </div>
+
+            <p style="color: #666666; line-height: 1.6; margin: 25px 0 0 0; font-size: 14px;">
+                If you have any questions about your order, please don't hesitate to contact our support team.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+            <p style="color: #666666; margin: 0 0 10px 0; font-size: 14px;">
+                <strong>Your Store</strong><br>
+                Making your shopping experience amazing
+            </p>
+            <p style="color: #999999; margin: 0; font-size: 12px;">
+                This email was sent to you because you placed an order with us.<br>
+                <a href="{{storeUrl}}" style="color: #667eea; text-decoration: none;">Visit our store</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
