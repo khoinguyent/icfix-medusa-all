@@ -1,8 +1,17 @@
 {
-  "name": "notification-nodemailer",
+  "name": "medusa-plugin-notification-nodemailer",
   "version": "1.0.0",
   "description": "Nodemailer notification plugin for Medusa - sends emails via SMTP or Gmail OAuth2",
   "main": "index.js",
+  "keywords": [
+    "medusa",
+    "plugin",
+    "notification",
+    "nodemailer",
+    "email"
+  ],
+  "author": "Your Store",
+  "license": "MIT",
   "dependencies": {
     "nodemailer": "^6.9.10",
     "googleapis": "^126.0.1"
