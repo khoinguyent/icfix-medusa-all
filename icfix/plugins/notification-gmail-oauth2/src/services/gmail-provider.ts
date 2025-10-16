@@ -1,8 +1,7 @@
 import { 
   AbstractNotificationProviderService,
-  Logger,
-} from "@medusajs/framework/utils"
-import { MedusaError } from "@medusajs/framework/utils"
+  MedusaError,
+} from "@medusajs/framework/dist/utils"
 import nodemailer from "nodemailer"
 import { google } from "googleapis"
 import fs from "fs"
@@ -29,14 +28,14 @@ type SendOptions = {
 class GmailNotificationProviderService extends AbstractNotificationProviderService {
   static identifier = "notification-gmail-oauth2"
   
-  protected logger_: Logger
+  protected logger_: any
   protected options_: GmailProviderOptions
   protected transporter_: any
   protected templatesDir_: string
   protected initialized_: boolean = false
 
   constructor(container: any, options: GmailProviderOptions) {
-    super(container, options)
+    super()
     
     this.logger_ = container.logger
     this.options_ = {
@@ -79,7 +78,7 @@ class GmailNotificationProviderService extends AbstractNotificationProviderServi
       const accessToken = await oauth2Client.getAccessToken()
 
       // Create Nodemailer transporter with OAuth2
-      this.transporter_ = nodemailer.createTransporter({
+      this.transporter_ = nodemailer.createTransport({
         service: 'gmail',
         auth: {
           type: 'OAuth2',
