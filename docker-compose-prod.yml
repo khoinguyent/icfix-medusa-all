@@ -62,8 +62,8 @@ services:
     #   :main             - Latest main branch build
     #   :sha-abc1234      - Specific commit SHA (for rollback/pinning)
     #   :main-abc1234     - Branch + commit SHA
-    # Currently using specific SHA with Nodemailer plugin + dependencies installed
-    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-4f443a3
+    # Using commit with medusa-plugin- prefix fix
+    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-ae09e9d
     container_name: icfix-backend
     restart: unless-stopped
     depends_on:

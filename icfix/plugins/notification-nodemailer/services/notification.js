@@ -1,17 +1,20 @@
-const { NotificationService } = require("@medusajs/medusa")
 const nodemailer = require("nodemailer")
 const { google } = require("googleapis")
 const fs = require("fs")
 const path = require("path")
 
-class NodemailerNotificationService extends NotificationService {
+/**
+ * Nodemailer Notification Service for Medusa
+ * Implements Medusa notification interface without extending base class
+ * (avoids dependency issues with @medusajs/medusa in plugin)
+ */
+class NodemailerNotificationService {
   static identifier = "nodemailer"
 
   constructor(container, options) {
-    super(container, options)
     this.container_ = container
     this.options_ = options
-    this.logger_ = container.logger || console
+    this.logger_ = container?.logger || console
     this.transporter_ = null
     this.templatesDir_ = path.join(__dirname, "../templates")
     
