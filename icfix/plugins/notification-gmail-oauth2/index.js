@@ -273,31 +273,5 @@ module.exports = GmailNotificationService;
 // Export default for ES module compatibility
 module.exports.default = GmailNotificationService;
 
-// Notification Module Provider interface for Medusa v2
-module.exports.loaders = [
-  {
-    name: 'gmail-notification-provider',
-    func: async (container, options) => {
-      try {
-        const logger = container.resolve("logger");
-        logger.info('🔧 Initializing Gmail Notification Provider...');
-        
-        // Create Gmail service instance
-        const gmailService = new GmailNotificationService(container, options);
-        
-        // Register as Notification Module Provider
-        container.register({
-          'gmail-oauth2': {
-            resolve: () => gmailService,
-          },
-        });
-        
-        logger.info('✅ Gmail Notification Provider registered successfully');
-      } catch (error) {
-        const logger = container.resolve("logger");
-        logger.error('❌ Failed to load Gmail notification provider:', error.message);
-        logger.error(error);
-      }
-    },
-  },
-];
+// Simple export - no complex loaders that cause circular dependencies
+// The simple-email-notifications.ts subscriber will handle email sending directly
