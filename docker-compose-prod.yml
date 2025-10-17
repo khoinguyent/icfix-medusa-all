@@ -63,7 +63,7 @@ services:
     #   :sha-abc1234      - Specific commit SHA (for rollback/pinning)
     #   :main-abc1234     - Branch + commit SHA
     # Gmail integration - application loader registration
-    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-c1730e0
+    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-bad8053
     container_name: icfix-backend
     restart: unless-stopped
     depends_on:

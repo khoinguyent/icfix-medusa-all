@@ -4,7 +4,7 @@ import type {
 } from "@medusajs/framework"
 
 // Import Gmail service directly (no container resolution)
-const GmailNotificationService = require("../../../plugins/notification-gmail-oauth2/index.js")
+const GmailNotificationService = require("medusa-plugin-notification-gmail-oauth2")
 
 export default async function simpleEmailNotificationsHandler({
   event: { name, data },
