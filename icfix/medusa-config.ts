@@ -87,5 +87,4 @@ module.exports = defineConfig({
       sslmode: "disable",
     },
   },
-  modules: []
 })
