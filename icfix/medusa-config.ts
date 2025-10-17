@@ -55,7 +55,7 @@ module.exports = defineConfig({
       options: {
         providers: [
           {
-            resolve: "./plugins/notification-gmail-oauth2",
+            resolve: "medusa-plugin-notification-gmail-oauth2",
             id: "gmail",
             options: {
               channels: ["email"],
