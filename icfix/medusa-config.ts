@@ -49,6 +49,28 @@ module.exports = defineConfig({
       },
     },
   ],
+  modules: [
+    {
+      resolve: "@medusajs/medusa/notification",
+      options: {
+        providers: [
+          {
+            resolve: "./plugins/notification-gmail-oauth2",
+            id: "gmail",
+            options: {
+              channels: ["email"],
+              user: process.env.GMAIL_USER,
+              clientId: process.env.GOOGLE_CLIENT_ID,
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+              refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+              storeName: process.env.STORE_NAME || "ICFix Store",
+              storeUrl: process.env.STORE_URL || "https://yourstore.com",
+            },
+          },
+        ],
+      },
+    },
+  ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,
