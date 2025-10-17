@@ -1,15 +1,12 @@
 import { asFunction } from "awilix"
-import type { MedusaContainer } from "@medusajs/framework/types"
 
-// Import the Gmail service from the plugin
-const GmailNotificationService = require("medusa-plugin-notification-gmail-oauth2")
-
-export default async function gmailNotificationLoader(
-  container: MedusaContainer
-) {
+export default async function gmailNotificationLoader(container: any) {
   try {
     const logger = container.resolve("logger")
     const configModule = container.resolve("configModule")
+    
+    // Import the Gmail service from the plugin
+    const GmailNotificationService = require("medusa-plugin-notification-gmail-oauth2")
     
     // Get Gmail plugin options from config
     const gmailPluginConfig = configModule.plugins.find(
@@ -20,16 +17,15 @@ export default async function gmailNotificationLoader(
     
     // Register Gmail service in the container
     container.register({
-      gmailNotificationService: asFunction((cradle) => {
+      gmailNotificationService: asFunction((cradle: any) => {
         return new GmailNotificationService(cradle, options)
       }).singleton(),
     })
     
-    logger.info("✅ Gmail Notification Service registered in container")
+    logger.info("✅ Gmail Notification Service registered via application loader")
   } catch (error: any) {
     const logger = container.resolve("logger")
-    logger.error("❌ Failed to load Gmail notification service:", error.message)
-    logger.error(error)
+    logger.error("❌ Failed to load Gmail notification service:", error?.message || error)
   }
 }
 
