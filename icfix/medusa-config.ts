@@ -48,16 +48,26 @@ module.exports = defineConfig({
         ],
       },
     },
-    // Gmail OAuth2 Email Notification Plugin  
+  ],
+  modules: [
     {
-      resolve: "medusa-plugin-notification-gmail-oauth2",
+      resolve: "@medusajs/medusa/notification",
       options: {
-        user: process.env.GMAIL_USER,
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-        storeName: process.env.STORE_NAME || "Your Store",
-        storeUrl: process.env.STORE_URL || "https://yourstore.com",
+        providers: [
+          {
+            resolve: "medusa-plugin-notification-gmail-oauth2",
+            id: "gmail-oauth2",
+            options: {
+              channels: ["email"],
+              user: process.env.GMAIL_USER,
+              clientId: process.env.GOOGLE_CLIENT_ID,
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+              refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+              storeName: process.env.STORE_NAME || "Your Store",
+              storeUrl: process.env.STORE_URL || "https://yourstore.com",
+            },
+          },
+        ],
       },
     },
   ],

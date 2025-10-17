@@ -273,23 +273,30 @@ module.exports = GmailNotificationService;
 // Export default for ES module compatibility
 module.exports.default = GmailNotificationService;
 
-// Medusa plugin loaders - registers the service in the container
+// Notification Module Provider interface for Medusa v2
 module.exports.loaders = [
   {
-    name: 'gmail-notification-loader',
+    name: 'gmail-notification-provider',
     func: async (container, options) => {
       try {
-        // Create and register the Gmail service using Awilix
+        const logger = container.resolve("logger");
+        logger.info('🔧 Initializing Gmail Notification Provider...');
+        
+        // Create Gmail service instance
+        const gmailService = new GmailNotificationService(container, options);
+        
+        // Register as Notification Module Provider
         container.register({
-          gmailNotificationService: require('awilix').asFunction((cradle) => {
-            return new GmailNotificationService(cradle, options);
-          }).singleton(),
+          'gmail-oauth2': {
+            resolve: () => gmailService,
+          },
         });
         
-        container.logger.info('✅ Gmail Notification Service registered in container');
+        logger.info('✅ Gmail Notification Provider registered successfully');
       } catch (error) {
-        container.logger.error('❌ Failed to load Gmail notification service:', error.message);
-        container.logger.error(error);
+        const logger = container.resolve("logger");
+        logger.error('❌ Failed to load Gmail notification provider:', error.message);
+        logger.error(error);
       }
     },
   },

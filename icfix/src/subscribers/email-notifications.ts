@@ -2,6 +2,7 @@ import type {
   SubscriberConfig,
   SubscriberArgs,
 } from "@medusajs/framework"
+import { Modules } from "@medusajs/framework/utils"
 
 export default async function emailNotificationsHandler({
   event: { name, data },
@@ -10,11 +11,11 @@ export default async function emailNotificationsHandler({
   const logger = container.resolve("logger")
   
   try {
-    // Get the Gmail notification service registered by the plugin
-    const gmailService = container.resolve("gmailNotificationService")
+    // Get the Notification Module service (Medusa's built-in notification system)
+    const notificationModuleService = container.resolve(Modules.NOTIFICATION)
     
-    if (!gmailService) {
-      logger.warn("Gmail notification service not found. Make sure the plugin is properly loaded.")
+    if (!notificationModuleService) {
+      logger.warn("Notification Module service not found.")
       return
     }
 
@@ -22,19 +23,19 @@ export default async function emailNotificationsHandler({
 
     switch (name) {
       case "order.placed":
-        await handleOrderPlaced(data, gmailService, logger)
+        await handleOrderPlaced(data, notificationModuleService, logger)
         break
       
       case "order.shipment_created":
-        await handleOrderShipped(data, gmailService, logger)
+        await handleOrderShipped(data, notificationModuleService, logger)
         break
       
       case "order.canceled":
-        await handleOrderCanceled(data, gmailService, logger)
+        await handleOrderCanceled(data, notificationModuleService, logger)
         break
       
       case "customer.password_token_generated":
-        await handlePasswordReset(data, gmailService, logger)
+        await handlePasswordReset(data, notificationModuleService, logger)
         break
       
       default:
@@ -45,7 +46,7 @@ export default async function emailNotificationsHandler({
   }
 }
 
-async function handleOrderPlaced(data: any, gmailService: any, logger: any) {
+async function handleOrderPlaced(data: any, notificationService: any, logger: any) {
   try {
     const { id, email, customer, total, currency_code, display_id } = data
 
@@ -55,23 +56,26 @@ async function handleOrderPlaced(data: any, gmailService: any, logger: any) {
       return
     }
 
-    const orderData = {
-      email: recipientEmail,
-      customerName: customer?.first_name || customer?.email || "Customer",
-      orderId: display_id || id,
-      orderTotal: total || 0,
-      currency: currency_code?.toUpperCase() || "USD",
-      storeUrl: process.env.STORE_URL || "https://yourstore.com",
-    }
-
-    await gmailService.sendNotification("order.placed", orderData)
+    await notificationService.createNotifications({
+      to: recipientEmail,
+      channel: "email",
+      template: "order-placed",
+      data: {
+        customerName: customer?.first_name || customer?.email || "Customer",
+        orderId: display_id || id,
+        orderTotal: total || 0,
+        currency: currency_code?.toUpperCase() || "USD",
+        storeUrl: process.env.STORE_URL || "https://yourstore.com",
+      },
+    })
+    
     logger.info(`✅ Order confirmation email sent for order: ${display_id || id}`)
   } catch (error) {
     logger.error(`Failed to send order placed notification:`, error)
   }
 }
 
-async function handleOrderShipped(data: any, gmailService: any, logger: any) {
+async function handleOrderShipped(data: any, notificationService: any, logger: any) {
   try {
     const { order_id, fulfillment, order } = data
 
@@ -85,23 +89,26 @@ async function handleOrderShipped(data: any, gmailService: any, logger: any) {
       return
     }
 
-    const shipmentData = {
-      email: recipientEmail,
-      customerName: customer.first_name || customer.email || "Customer",
-      orderId: orderDetails.display_id || order_id,
-      trackingNumber: fulfillment?.tracking_numbers?.[0] || "TBA",
-      carrier: fulfillment?.provider_id || "Shipping Carrier",
-      storeUrl: process.env.STORE_URL || "https://yourstore.com",
-    }
-
-    await gmailService.sendNotification("order.shipped", shipmentData)
-    logger.info(`✅ Shipment notification sent for order: ${shipmentData.orderId}`)
+    await notificationService.createNotifications({
+      to: recipientEmail,
+      channel: "email",
+      template: "order-shipped",
+      data: {
+        customerName: customer.first_name || customer.email || "Customer",
+        orderId: orderDetails.display_id || order_id,
+        trackingNumber: fulfillment?.tracking_numbers?.[0] || "TBA",
+        carrier: fulfillment?.provider_id || "Shipping Carrier",
+        storeUrl: process.env.STORE_URL || "https://yourstore.com",
+      },
+    })
+    
+    logger.info(`✅ Shipment notification sent for order: ${orderDetails.display_id || order_id}`)
   } catch (error) {
     logger.error(`Failed to send order shipped notification:`, error)
   }
 }
 
-async function handleOrderCanceled(data: any, gmailService: any, logger: any) {
+async function handleOrderCanceled(data: any, notificationService: any, logger: any) {
   try {
     const { id, email, customer, total, currency_code, display_id, cancel_reason } = data
 
@@ -111,24 +118,27 @@ async function handleOrderCanceled(data: any, gmailService: any, logger: any) {
       return
     }
 
-    const cancelData = {
-      email: recipientEmail,
-      customerName: customer?.first_name || customer?.email || "Customer",
-      orderId: display_id || id,
-      reason: cancel_reason || "Order cancellation requested",
-      refundAmount: total || 0,
-      currency: currency_code?.toUpperCase() || "USD",
-      storeUrl: process.env.STORE_URL || "https://yourstore.com",
-    }
-
-    await gmailService.sendNotification("order.canceled", cancelData)
-    logger.info(`✅ Order cancellation email sent for order: ${cancelData.orderId}`)
+    await notificationService.createNotifications({
+      to: recipientEmail,
+      channel: "email",
+      template: "order-canceled",
+      data: {
+        customerName: customer?.first_name || customer?.email || "Customer",
+        orderId: display_id || id,
+        reason: cancel_reason || "Order cancellation requested",
+        refundAmount: total || 0,
+        currency: currency_code?.toUpperCase() || "USD",
+        storeUrl: process.env.STORE_URL || "https://yourstore.com",
+      },
+    })
+    
+    logger.info(`✅ Order cancellation email sent for order: ${display_id || id}`)
   } catch (error) {
     logger.error(`Failed to send order canceled notification:`, error)
   }
 }
 
-async function handlePasswordReset(data: any, gmailService: any, logger: any) {
+async function handlePasswordReset(data: any, notificationService: any, logger: any) {
   try {
     const { customer_id, token, customer } = data
 
@@ -138,14 +148,17 @@ async function handlePasswordReset(data: any, gmailService: any, logger: any) {
       return
     }
 
-    const resetData = {
-      email: recipientEmail,
-      customerName: customer?.first_name || customer?.email || "User",
-      resetLink: `${process.env.STORE_URL || "https://yourstore.com"}/account/reset-password?token=${token}`,
-      storeUrl: process.env.STORE_URL || "https://yourstore.com",
-    }
-
-    await gmailService.sendNotification("password_reset", resetData)
+    await notificationService.createNotifications({
+      to: recipientEmail,
+      channel: "email",
+      template: "password-reset",
+      data: {
+        customerName: customer?.first_name || customer?.email || "User",
+        resetLink: `${process.env.STORE_URL || "https://yourstore.com"}/account/reset-password?token=${token}`,
+        storeUrl: process.env.STORE_URL || "https://yourstore.com",
+      },
+    })
+    
     logger.info(`✅ Password reset email sent to: ${recipientEmail}`)
   } catch (error) {
     logger.error(`Failed to send password reset notification:`, error)
