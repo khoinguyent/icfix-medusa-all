@@ -22,7 +22,7 @@ export default async function simpleEmailNotificationsHandler({
 
     switch (name) {
       case "order.placed":
-        await handleOrderPlaced(data, notificationModuleService, logger)
+        await handleOrderPlaced(data, notificationModuleService, logger, container)
         break
       
       case "order.shipment_created":
@@ -45,13 +45,36 @@ export default async function simpleEmailNotificationsHandler({
   }
 }
 
-async function handleOrderPlaced(data: any, notificationService: any, logger: any) {
+async function handleOrderPlaced(
+  data: any,
+  notificationService: any,
+  logger: any,
+  container: any
+) {
   try {
-    const { id, email, customer, total, currency_code, display_id } = data
+    // The event payload typically contains the order id
+    const orderId = data?.id || data?.order_id
+    if (!orderId) {
+      logger.warn("Order placed notification: No order id in payload")
+      return
+    }
 
-    const recipientEmail = email || customer?.email
+    // Fetch the order to get a reliable email address
+    const query = container.resolve("query")
+    const { data: [order] } = await query.graph({
+      entity: "order",
+      fields: ["*", "customer.*"],
+      filters: { id: orderId },
+    })
+
+    if (!order) {
+      logger.warn(`Order placed notification: Order not found (${orderId})`)
+      return
+    }
+
+    const recipientEmail = order.email || order.customer?.email
     if (!recipientEmail) {
-      logger.warn("Order placed notification: No email address found")
+      logger.warn("Order placed notification: No email address found on order")
       return
     }
 
@@ -60,16 +83,16 @@ async function handleOrderPlaced(data: any, notificationService: any, logger: an
       channel: "email",
       template: "orderPlaced",
       data: {
-        subject: `Order Confirmation #${display_id || id}`,
-        customerName: customer?.first_name || customer?.email || "Customer",
-        orderId: display_id || id,
-        orderTotal: total || 0,
-        currency: currency_code?.toUpperCase() || "USD",
+        subject: `Order Confirmation #${order.display_id || order.id}`,
+        customerName: order.customer?.first_name || order.customer?.email || "Customer",
+        orderId: order.display_id || order.id,
+        orderTotal: order.total || 0,
+        currency: (order.currency_code || "usd").toUpperCase(),
         storeUrl: process.env.STORE_URL || "https://yourstore.com",
       },
     })
-    
-    logger.info(`✅ Order confirmation email sent for order: ${display_id || id}`)
+
+    logger.info(`✅ Order confirmation email sent for order: ${order.display_id || order.id}`)
   } catch (error) {
     logger.error(`Failed to send order placed notification:`, error)
   }
