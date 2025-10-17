@@ -18,7 +18,17 @@ fi
 
 RECIPIENT_EMAIL="$1"
 CONTAINER_NAME="icfix-backend"
-ENV_FILE="icfix/.env"
+
+# Find .env file - check multiple possible locations
+ENV_FILE=""
+if [ -f ".env" ]; then
+    ENV_FILE=".env"
+elif [ -f "icfix/.env" ]; then
+    ENV_FILE="icfix/.env"
+else
+    # Look for any .env file in current directory and subdirectories
+    ENV_FILE=$(find . -maxdepth 2 -name ".env" -type f 2>/dev/null | head -1)
+fi
 
 echo "📧 Gmail Docker Test Script"
 echo "============================"
@@ -37,11 +47,16 @@ fi
 echo "✅ Container is running"
 
 # Check if .env file exists
-if [ ! -f "$ENV_FILE" ]; then
-    echo "❌ .env file not found at: $ENV_FILE"
+if [ -z "$ENV_FILE" ] || [ ! -f "$ENV_FILE" ]; then
+    echo "❌ .env file not found!"
     echo ""
-    echo "Please create it with Gmail OAuth2 credentials:"
-    echo "  nano $ENV_FILE"
+    echo "Searched locations:"
+    echo "  - ./.env"
+    echo "  - ./icfix/.env"
+    echo "  - Any .env file in current directory"
+    echo ""
+    echo "Please create .env file with Gmail OAuth2 credentials:"
+    echo "  nano .env"
     echo ""
     echo "Required variables:"
     echo "  GMAIL_USER=your-email@gmail.com"
@@ -53,10 +68,10 @@ if [ ! -f "$ENV_FILE" ]; then
     exit 1
 fi
 
-echo "✅ Found .env file"
+echo "✅ Found .env file at: $ENV_FILE"
 
 # Copy .env to container
-echo "🔄 Copying .env file to container..."
+echo "🔄 Copying .env file from $ENV_FILE to container..."
 if docker cp "$ENV_FILE" "$CONTAINER_NAME:/app/.env"; then
     echo "✅ .env file copied successfully"
 else
