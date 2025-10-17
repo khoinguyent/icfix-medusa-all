@@ -2,7 +2,6 @@ import type {
   SubscriberConfig,
   SubscriberArgs,
 } from "@medusajs/framework"
-import { Modules } from "@medusajs/framework/utils"
 
 export default async function emailNotificationsHandler({
   event: { name, data },
@@ -12,7 +11,7 @@ export default async function emailNotificationsHandler({
   
   try {
     // Get the Notification Module service (Medusa's built-in notification system)
-    const notificationModuleService = container.resolve(Modules.NOTIFICATION)
+    const notificationModuleService = container.resolve("notification")
     
     if (!notificationModuleService) {
       logger.warn("Notification Module service not found.")
