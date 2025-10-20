@@ -1,5 +1,5 @@
-import { AbstractNotificationProviderService } from "@medusajs/framework/utils"
-import type { Logger, ProviderSendNotificationDTO, ProviderSendNotificationResultsDTO } from "@medusajs/framework/types"
+import { AbstractNotificationProviderService } from "@medusajs/utils"
+import type { Logger, ProviderSendNotificationDTO, ProviderSendNotificationResultsDTO } from "@medusajs/types"
 import nodemailer from "nodemailer"
 import { google } from "googleapis"
 import fs from "fs"
@@ -38,7 +38,7 @@ class GmailNotificationService extends AbstractNotificationProviderService {
   ) {
     super()
     
-    this.logger_ = logger || console
+    this.logger_ = logger
     this.options_ = {
       ...options,
       user: options.user || process.env.GMAIL_USER,
