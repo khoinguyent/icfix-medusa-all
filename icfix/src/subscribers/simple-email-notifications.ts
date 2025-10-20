@@ -59,11 +59,18 @@ async function handleOrderPlaced(
       return
     }
 
-    // Fetch the order to get a reliable email address
+    // Fetch the order to get a reliable email address and items
     const query = container.resolve("query")
     const { data: [order] } = await query.graph({
       entity: "order",
-      fields: ["*", "customer.*"],
+      fields: [
+        "*", 
+        "customer.*",
+        "items.*",
+        "items.variant.*",
+        "items.product.*",
+        "items.product.images.*"
+      ],
       filters: { id: orderId },
     })
 
@@ -78,20 +85,42 @@ async function handleOrderPlaced(
       return
     }
 
+    // Format order items for template
+    const orderItems = (order.items || []).map((item: any) => ({
+      title: item.product?.title || item.variant?.title || "Item",
+      variant: item.variant?.title || "",
+      quantity: item.quantity || 1,
+      unitPrice: item.unit_price || 0,
+      totalPrice: (item.unit_price || 0) * (item.quantity || 1),
+      image: item.product?.images?.[0]?.url || "",
+    }))
+
+    const subtotal = orderItems.reduce((sum: number, item: any) => sum + item.totalPrice, 0)
+    const shipping = order.shipping_total || 0
+    const tax = order.tax_total || 0
+    const total = order.total || (subtotal + shipping + tax)
+
+    const notificationData = {
+      subject: `Order Confirmation #${order.display_id || order.id}`,
+      customerName: order.customer?.first_name || order.customer?.email || "Customer",
+      orderId: order.display_id || order.id,
+      orderTotal: (total / 100).toFixed(2), // Convert from cents
+      currency: (order.currency_code || "usd").toUpperCase(),
+      storeUrl: process.env.STORE_URL || "https://yourstore.com",
+      orderItems: orderItems,
+      subtotal: (subtotal / 100).toFixed(2),
+      shipping: (shipping / 100).toFixed(2),
+      tax: (tax / 100).toFixed(2),
+      total: (total / 100).toFixed(2),
+    }
+
     // Attempt send, and retry once if provider wasn't initialized yet
     try {
       await notificationService.createNotifications({
         to: recipientEmail,
         channel: "email",
         template: "orderPlaced",
-        data: {
-          subject: `Order Confirmation #${order.display_id || order.id}`,
-          customerName: order.customer?.first_name || order.customer?.email || "Customer",
-          orderId: order.display_id || order.id,
-          orderTotal: order.total || 0,
-          currency: (order.currency_code || "usd").toUpperCase(),
-          storeUrl: process.env.STORE_URL || "https://yourstore.com",
-        },
+        data: notificationData,
       })
     } catch (err: any) {
       const msg = String(err?.message || err)
@@ -102,14 +131,7 @@ async function handleOrderPlaced(
           to: recipientEmail,
           channel: "email",
           template: "orderPlaced",
-          data: {
-            subject: `Order Confirmation #${order.display_id || order.id}`,
-            customerName: order.customer?.first_name || order.customer?.email || "Customer",
-            orderId: order.display_id || order.id,
-            orderTotal: order.total || 0,
-            currency: (order.currency_code || "usd").toUpperCase(),
-            storeUrl: process.env.STORE_URL || "https://yourstore.com",
-          },
+          data: notificationData,
         })
       } else {
         throw err

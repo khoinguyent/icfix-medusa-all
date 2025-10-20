@@ -25,14 +25,57 @@
 
             <!-- Order Details Box -->
             <div style="background-color: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0; border-left: 4px solid #667eea;">
-                <h3 style="color: #333333; margin: 0 0 15px 0; font-size: 18px;">Order Details</h3>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <span style="color: #666666; font-weight: 500;">Order Number:</span>
-                    <span style="color: #333333; font-weight: 600;">#{{orderId}}</span>
+                <h3 style="color: #333333; margin: 0 0 20px 0; font-size: 18px;">Order Details</h3>
+                
+                <!-- Order Items -->
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #333333; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">Items Ordered</h4>
+                    {{#each orderItems}}
+                    <div style="display: flex; align-items: center; padding: 15px 0; border-bottom: 1px solid #e9ecef;">
+                        {{#if image}}
+                        <div style="width: 60px; height: 60px; margin-right: 15px; flex-shrink: 0;">
+                            <img src="{{image}}" alt="{{title}}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">
+                        </div>
+                        {{/if}}
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #333333; margin-bottom: 5px;">{{title}}</div>
+                            {{#if variant}}
+                            <div style="font-size: 14px; color: #666666; margin-bottom: 5px;">{{variant}}</div>
+                            {{/if}}
+                            <div style="font-size: 14px; color: #666666;">
+                                Quantity: {{quantity}} × {{currency}} {{unitPrice}} = {{currency}} {{totalPrice}}
+                            </div>
+                        </div>
+                    </div>
+                    {{/each}}
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <span style="color: #666666; font-weight: 500;">Total Amount:</span>
-                    <span style="color: #333333; font-weight: 600;">{{currency}} {{orderTotal}}</span>
+
+                <!-- Order Summary -->
+                <div style="border-top: 2px solid #e9ecef; padding-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #666666; font-weight: 500;">Subtotal:</span>
+                        <span style="color: #333333; font-weight: 600;">{{currency}} {{subtotal}}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #666666; font-weight: 500;">Shipping:</span>
+                        <span style="color: #333333; font-weight: 600;">{{currency}} {{shipping}}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #666666; font-weight: 500;">Tax:</span>
+                        <span style="color: #333333; font-weight: 600;">{{currency}} {{tax}}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 2px solid #667eea;">
+                        <span style="color: #333333; font-weight: 700; font-size: 18px;">Total:</span>
+                        <span style="color: #667eea; font-weight: 700; font-size: 18px;">{{currency}} {{total}}</span>
+                    </div>
+                </div>
+
+                <!-- Order Number -->
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #666666; font-weight: 500;">Order Number:</span>
+                        <span style="color: #333333; font-weight: 600;">#{{orderId}}</span>
+                    </div>
                 </div>
             </div>
 

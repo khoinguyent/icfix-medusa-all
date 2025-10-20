@@ -120,13 +120,64 @@ class GmailNotificationService extends AbstractNotificationProviderService {
       }
 
       let html = fs.readFileSync(templatePath, 'utf8')
-      html = html.replace(/\{\{(\w+)\}\}/g, (match, key) => variables[key] || '')
+      
+      // Handle Handlebars loops for orderItems
+      if (variables.orderItems && Array.isArray(variables.orderItems)) {
+        html = this.processHandlebarsLoop(html, 'orderItems', variables.orderItems, variables)
+      }
+      
+      // Replace simple variables
+      html = html.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+        if (key === 'orderItems') return '' // Already processed above
+        return variables[key] || ''
+      })
 
       return html
     } catch (error: any) {
       this.logger_.error(`Error loading template ${templateName}:`, error.message)
       return null
     }
+  }
+
+  private processHandlebarsLoop(html: string, loopVar: string, items: any[], context: Record<string, any>): string {
+    const loopRegex = new RegExp(`\\{\\{#each ${loopVar}\\}\\}([\\s\\S]*?)\\{\\{/each\\}\\}`, 'g')
+    
+    return html.replace(loopRegex, (match, template) => {
+      return items.map(item => {
+        let itemHtml = template
+        
+        // Replace item properties
+        Object.keys(item).forEach(key => {
+          const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g')
+          itemHtml = itemHtml.replace(regex, item[key] || '')
+        })
+        
+        // Replace context variables (like currency)
+        Object.keys(context).forEach(key => {
+          if (key !== loopVar) {
+            const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g')
+            itemHtml = itemHtml.replace(regex, context[key] || '')
+          }
+        })
+        
+        // Handle conditional blocks like {{#if variant}}
+        itemHtml = this.processHandlebarsConditionals(itemHtml, item)
+        
+        return itemHtml
+      }).join('')
+    })
+  }
+
+  private processHandlebarsConditionals(html: string, context: Record<string, any>): string {
+    // Handle {{#if variable}}...{{/if}} blocks
+    const conditionalRegex = /\{\{#if (\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g
+    
+    return html.replace(conditionalRegex, (match, variable, content) => {
+      if (context[variable] && context[variable] !== '') {
+        return content
+      }
+      return ''
+    })
   }
 
   async sendEmail(options: {
