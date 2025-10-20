@@ -78,19 +78,43 @@ async function handleOrderPlaced(
       return
     }
 
-    await notificationService.createNotifications({
-      to: recipientEmail,
-      channel: "email",
-      template: "orderPlaced",
-      data: {
-        subject: `Order Confirmation #${order.display_id || order.id}`,
-        customerName: order.customer?.first_name || order.customer?.email || "Customer",
-        orderId: order.display_id || order.id,
-        orderTotal: order.total || 0,
-        currency: (order.currency_code || "usd").toUpperCase(),
-        storeUrl: process.env.STORE_URL || "https://yourstore.com",
-      },
-    })
+    // Attempt send, and retry once if provider wasn't initialized yet
+    try {
+      await notificationService.createNotifications({
+        to: recipientEmail,
+        channel: "email",
+        template: "orderPlaced",
+        data: {
+          subject: `Order Confirmation #${order.display_id || order.id}`,
+          customerName: order.customer?.first_name || order.customer?.email || "Customer",
+          orderId: order.display_id || order.id,
+          orderTotal: order.total || 0,
+          currency: (order.currency_code || "usd").toUpperCase(),
+          storeUrl: process.env.STORE_URL || "https://yourstore.com",
+        },
+      })
+    } catch (err: any) {
+      const msg = String(err?.message || err)
+      if (msg.includes("not initialized")) {
+        logger.warn("Gmail provider not initialized yet. Retrying once...")
+        await new Promise((r) => setTimeout(r, 1500))
+        await notificationService.createNotifications({
+          to: recipientEmail,
+          channel: "email",
+          template: "orderPlaced",
+          data: {
+            subject: `Order Confirmation #${order.display_id || order.id}`,
+            customerName: order.customer?.first_name || order.customer?.email || "Customer",
+            orderId: order.display_id || order.id,
+            orderTotal: order.total || 0,
+            currency: (order.currency_code || "usd").toUpperCase(),
+            storeUrl: process.env.STORE_URL || "https://yourstore.com",
+          },
+        })
+      } else {
+        throw err
+      }
+    }
 
     logger.info(`✅ Order confirmation email sent for order: ${order.display_id || order.id}`)
   } catch (error) {
