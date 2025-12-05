@@ -86,12 +86,22 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:9000/health || exit 1
 
-# Start Medusa from the root directory
-# The build process creates .medusa/server with the compiled code
-# Dependencies are already installed in /app/node_modules
-# We just need to run from the root and Medusa will find the built code
-WORKDIR /app
+# After build, we need to work with .medusa/server directory
+# According to Medusa docs: https://docs.medusajs.com/learn/build#start-built-medusa-application
+# 1. Copy medusa-config.ts to .medusa/server (or use env vars)
+# 2. Install dependencies in .medusa/server
+# 3. Run from .medusa/server
 
-# Start Medusa using npm start (which runs "medusa start")
-# This will automatically find and use the built application in .medusa/server
+# Copy medusa-config.ts to .medusa/server so it can be found
+RUN cp medusa-config.ts .medusa/server/medusa-config.ts && \
+    echo "✓ Copied medusa-config.ts to .medusa/server"
+
+# Change to .medusa/server and install dependencies
+WORKDIR /app/.medusa/server
+RUN npm install --legacy-peer-deps && \
+    echo "✓ Installed dependencies in .medusa/server"
+
+# Start Medusa from .medusa/server directory
+# Set NODE_ENV to production for production mode
+ENV NODE_ENV=production
 CMD ["npm", "start"]
