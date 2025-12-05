@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache"
+import { revalidateTag, revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
@@ -22,6 +22,9 @@ export async function POST(request: NextRequest) {
       revalidateTag(`collections-${cacheId}`)
       revalidateTag(`products-${cacheId}`)
       revalidateTag(`categories-${cacheId}`)
+      // Also revalidate paths to ensure pages are regenerated
+      revalidatePath("/store", "page")
+      revalidatePath("/", "page")
       return NextResponse.json({ revalidated: true, now: Date.now(), cacheId, event: "manual" })
     }
     
@@ -53,6 +56,8 @@ export async function POST(request: NextRequest) {
       revalidateTag(`categories-${cacheId}`)
       // Also try static tag as fallback
       revalidateTag("categories")
+      // Revalidate store page to ensure category list updates
+      revalidatePath("/store", "page")
     }
 
     return NextResponse.json({ revalidated: true, now: Date.now(), cacheId })
