@@ -16,8 +16,8 @@ RUN apk update && \
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies using npm (uses package-lock.json)
-RUN npm ci --only=production
+# Install ALL dependencies (including dev dependencies needed for build)
+RUN npm ci
 
 # Copy the rest of your app's source code
 COPY . .
@@ -31,7 +31,7 @@ RUN echo "=== PLUGIN SETUP ===" && \
             echo "" && \
             echo "Installing dependencies for: $plugin_name" && \
             cd "$plugin_dir" && \
-            npm install --only=production && \
+            npm install && \
             echo "✓ $plugin_name dependencies installed" && \
             cd /app; \
         fi; \
@@ -44,8 +44,11 @@ RUN echo "=== PLUGIN SETUP ===" && \
 # Make scripts executable
 RUN chmod +x /app/scripts/wait-for-db.sh
 
-# Build the project
+# Build the project (requires dev dependencies)
 RUN npm run build
+
+# Remove dev dependencies after build to reduce image size
+RUN npm prune --production
 
 # Create symlink from .medusa/server/plugins to main plugins directory
 # This allows Medusa to find plugins from the build directory
