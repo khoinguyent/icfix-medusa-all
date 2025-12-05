@@ -16,10 +16,16 @@ RUN apk update && \
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
+# Copy plugins directory first (needed for local file dependency in package.json)
+# This must be done before npm install since package.json references file:./plugins/...
+COPY plugins/ ./plugins/
+
 # Install ALL dependencies (including dev dependencies needed for build)
-RUN npm ci
+# Use npm install instead of npm ci to handle local file dependencies better
+RUN npm install
 
 # Copy the rest of your app's source code
+# Note: plugins/ is already copied, but COPY . . will overwrite it (which is fine)
 COPY . .
 
 # Install plugin dependencies for all plugins with package.json
