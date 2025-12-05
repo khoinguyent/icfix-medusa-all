@@ -80,6 +80,6 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:9000/health || exit 1
 
-# The CMD is now handled by the command in your docker-compose.yml
-# This ensures it runs with the correct flags.
-CMD ["npx", "medusa", "start"]
+# Start Medusa using npm start (which runs "medusa start")
+# This ensures the CLI can properly resolve the built application
+CMD ["npm", "start"]
