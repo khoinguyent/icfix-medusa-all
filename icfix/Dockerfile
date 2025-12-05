@@ -5,12 +5,11 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install system dependencies including curl for health checks
-# Update package index first, then install dependencies
+# Install packages individually to avoid cross-platform build issues
 RUN apk update && \
-    apk add --no-cache \
-        netcat-openbsd \
-        curl \
-        wget && \
+    apk add --no-cache netcat-openbsd && \
+    apk add --no-cache curl && \
+    apk add --no-cache wget && \
     rm -rf /var/cache/apk/*
 
 # Copy package.json and package-lock.json
