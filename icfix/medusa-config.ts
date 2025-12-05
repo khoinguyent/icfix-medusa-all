@@ -1,3 +1,4 @@
+// @ts-ignore - @medusajs/framework/utils is available at runtime but types may not be exported
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
@@ -50,6 +51,26 @@ module.exports = defineConfig({
     },
   ],
   modules: [
+    {
+      resolve: "@medusajs/medusa/file",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/file-s3",
+            id: "s3",
+            options: {
+              file_url: process.env.R2_FILE_URL,
+              access_key_id: process.env.R2_ACCESS_KEY_ID,
+              secret_access_key: process.env.R2_SECRET_ACCESS_KEY,
+              region: process.env.R2_REGION || "auto",
+              bucket: process.env.R2_BUCKET,
+              endpoint: process.env.R2_ENDPOINT,
+              prefix: process.env.R2_PREFIX || "",
+            },
+          },
+        ],
+      },
+    },
     {
       resolve: "@medusajs/medusa/notification",
       options: {
