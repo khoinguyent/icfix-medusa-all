@@ -29,17 +29,22 @@ RUN npm install --legacy-peer-deps || (cat /root/.npm/_logs/* && exit 1)
 # Note: plugins/ is already copied, but COPY . . will overwrite it (which is fine)
 COPY . .
 
-# Install plugin dependencies for all plugins with package.json
+# Install and build plugin dependencies for all plugins with package.json
 RUN echo "=== PLUGIN SETUP ===" && \
-    echo "Installing dependencies for all plugins..." && \
+    echo "Installing and building all plugins..." && \
     for plugin_dir in ./plugins/*/ ; do \
         if [ -f "${plugin_dir}package.json" ]; then \
             plugin_name=$(basename "$plugin_dir") && \
             echo "" && \
-            echo "Installing dependencies for: $plugin_name" && \
+            echo "Processing plugin: $plugin_name" && \
             cd "$plugin_dir" && \
             npm install --legacy-peer-deps && \
             echo "✓ $plugin_name dependencies installed" && \
+            if grep -q '"build"' package.json; then \
+                echo "Building $plugin_name..." && \
+                npm run build && \
+                echo "✓ $plugin_name built successfully"; \
+            fi && \
             cd /app; \
         fi; \
     done && \
