@@ -61,7 +61,8 @@ RUN npm run build && \
 
 # Remove dev dependencies after build to reduce image size
 # Use --legacy-peer-deps to handle peer dependency conflicts
-RUN npm prune --production --legacy-peer-deps
+# Note: We keep all production dependencies including workflows SDK
+RUN npm prune --production --legacy-peer-deps || true
 
 # Create symlink from .medusa/server/plugins to main plugins directory
 # This allows Medusa to find plugins from the build directory
@@ -85,15 +86,12 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:9000/health || exit 1
 
-# Start Medusa from the built output directory
-# According to Medusa docs, after build, you need to:
-# 1. Install dependencies in .medusa/server
-# 2. Run npm start from .medusa/server
-WORKDIR /app/.medusa/server
-RUN npm install --legacy-peer-deps
-
-# Change back to /app for the CMD
+# Start Medusa from the root directory
+# The build process creates .medusa/server with the compiled code
+# Dependencies are already installed in /app/node_modules
+# We just need to run from the root and Medusa will find the built code
 WORKDIR /app
 
-# Start from .medusa/server directory where the built application is
-CMD ["sh", "-c", "cd .medusa/server && npm start"]
+# Start Medusa using npm start (which runs "medusa start")
+# This will automatically find and use the built application in .medusa/server
+CMD ["npm", "start"]
