@@ -21,7 +21,7 @@ COPY plugins/ ./plugins/
 
 # Install ALL dependencies (including dev dependencies needed for build)
 # Use npm install instead of npm ci to handle local file dependencies better
-RUN npm install
+RUN npm install || (cat /root/.npm/_logs/* && exit 1)
 
 # Copy the rest of your app's source code
 # Note: plugins/ is already copied, but COPY . . will overwrite it (which is fine)
