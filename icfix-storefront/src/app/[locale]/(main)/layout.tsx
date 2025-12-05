@@ -6,7 +6,7 @@ import CartMismatchBanner from "@modules/layout/components/cart-mismatch-banner"
 import Footer from "@modules/layout/templates/footer"
 import { NavigationHeader } from "@modules/layout/templates/nav"
 import FreeShippingPriceNudge from "@modules/shipping/components/free-shipping-price-nudge"
-import { StoreFreeShippingPrice } from "@types/shipping-option/http"
+import { StoreFreeShippingPrice } from "types/shipping-option/http"
 import { ArrowUpRightMini, ExclamationCircleSolid } from "@medusajs/icons"
 import { Metadata } from "next"
 
@@ -38,7 +38,7 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
       {cart && freeShippingPrices && (
         <FreeShippingPriceNudge
           variant="popup"
-          cart={cart}
+          cart={cart as any}
           freeShippingPrices={freeShippingPrices}
         />
       )}

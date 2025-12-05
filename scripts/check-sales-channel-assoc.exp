@@ -1,0 +1,75 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Category Found ==='\r"
+        expect "# "
+        send "echo 'ID: pcat_01KBPY6807G3PWWV5N8WZ9CRBV'\r"
+        expect "# "
+        send "echo 'Handle: ic-fix-face'\r"
+        expect "# "
+        send "echo 'Name: IC Fix Face'\r"
+        expect "# "
+        send "echo 'is_active: true'\r"
+        expect "# "
+        send "echo 'is_internal: false'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking Sales Channels Table Structure ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"\\dt *sales*\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Getting All Sales Channels ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT id, name FROM sales_channel ORDER BY created_at;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking Category-Sales Channel Junction Table ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '%category%sales%' OR table_name LIKE '%sales%category%';\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking if category has any sales channel relations ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND (table_name LIKE '%category%' OR table_name LIKE '%sales%') ORDER BY table_name;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking category data directly ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT id, handle, name, is_active, is_internal, metadata FROM product_category WHERE id = 'pcat_01KBPY6807G3PWWV5N8WZ9CRBV';\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

@@ -1,0 +1,76 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "echo '=== Docker Containers ==='\r"
+        expect "# "
+        send "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Backend Container Environment ==='\r"
+        expect "# "
+        send "CONTAINER=icfix-backend\r"
+        expect "# "
+        send "echo \"Container: \$CONTAINER\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo 'REVALIDATE_ENDPOINT:'\r"
+        expect "# "
+        send "docker exec \$CONTAINER env | grep REVALIDATE_ENDPOINT || echo 'Not set'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo 'REVALIDATE_SECRET:'\r"
+        expect "# "
+        send "docker exec \$CONTAINER env | grep REVALIDATE_SECRET | sed 's/=.*/=***HIDDEN***/' || echo 'Not set'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo 'WEBHOOK_TARGET_BASE:'\r"
+        expect "# "
+        send "docker exec \$CONTAINER env | grep WEBHOOK_TARGET_BASE || echo 'Not set'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Recent Revalidation Logs ==='\r"
+        expect "# "
+        send "docker logs \$CONTAINER 2>&1 | grep -i revalidate | tail -5 || echo 'No revalidation logs'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Backend Health ==='\r"
+        expect "# "
+        send "curl -s http://localhost:9000/health | head -1 || echo 'Health check failed'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking subscriber file ==='\r"
+        expect "# "
+        send "docker exec \$CONTAINER test -f /app/src/subscribers/vercel-revalidate.ts && echo 'Subscriber file exists' || echo 'Subscriber file not found'\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof

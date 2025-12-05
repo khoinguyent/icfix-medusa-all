@@ -1,0 +1,56 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Checking Category Parent ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT id, handle, name, parent_category_id, rank FROM product_category WHERE id = 'pcat_01KBPY6807G3PWWV5N8WZ9CRBV';\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Comparing with visible categories ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT id, handle, name, parent_category_id, rank FROM product_category WHERE is_active = true AND is_internal = false ORDER BY rank;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Fixing: Setting parent_category_id to NULL if needed ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"UPDATE product_category SET parent_category_id = NULL WHERE id = 'pcat_01KBPY6807G3PWWV5N8WZ9CRBV' AND parent_category_id IS NOT NULL;\"\r"
+        expect "# "
+        send "echo 'Updated'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Verifying fix ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT id, handle, name, parent_category_id, rank FROM product_category WHERE id = 'pcat_01KBPY6807G3PWWV5N8WZ9CRBV';\"\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

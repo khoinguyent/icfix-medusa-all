@@ -3,6 +3,7 @@ import { retrieveCustomer } from "@lib/data/customer"
 import AccountButton from "@modules/account/components/account-button"
 import CartButton from "@modules/cart/components/cart-button"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import LanguageSwitcher from "@modules/common/components/language-switcher"
 import FilePlus from "@modules/common/icons/file-plus"
 import LogoIcon from "@modules/common/icons/logo"
 import { MegaMenuWrapper } from "@modules/layout/components/mega-menu"
@@ -45,6 +46,10 @@ export async function NavigationHeader() {
           </div>
           <div className="flex justify-end items-center gap-2">
             <SearchInput />
+
+            <div className="h-4 w-px bg-neutral-300" />
+
+            <LanguageSwitcher />
 
             <div className="h-4 w-px bg-neutral-300" />
 

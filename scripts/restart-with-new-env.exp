@@ -1,0 +1,84 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Verifying .env file is fixed ==='\r"
+        expect "# "
+        send "grep 'REVALIDATE_ENDPOINT' .env\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Stopping backend container ==='\r"
+        expect "# "
+        send "docker-compose stop medusa-backend 2>/dev/null || docker-compose stop icfix-backend\r"
+        expect "# "
+        send "echo 'Stopped'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Starting backend container with new environment ==='\r"
+        expect "# "
+        send "docker-compose up -d medusa-backend 2>/dev/null || docker-compose up -d icfix-backend\r"
+        expect "# "
+        send "echo 'Started'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Waiting 10 seconds for container to fully start ==='\r"
+        expect "# "
+        send "sleep 10\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Verifying new environment variable in container ==='\r"
+        expect "# "
+        send "CONTAINER=icfix-backend\r"
+        expect "# "
+        send "docker exec \$CONTAINER env | grep REVALIDATE_ENDPOINT\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking container status ==='\r"
+        expect "# "
+        send "docker ps --filter name=icfix-backend --format '{{.Names}}: {{.Status}}'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Testing backend health ==='\r"
+        expect "# "
+        send "curl -s http://localhost:9000/health 2>/dev/null | head -1 || echo 'Health endpoint not ready yet'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking recent logs for revalidation errors ==='\r"
+        expect "# "
+        send "docker logs \$CONTAINER 2>&1 | grep -i 'revalidate\|invalid url' | tail -3 || echo 'No recent revalidation errors'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

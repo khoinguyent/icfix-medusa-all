@@ -7,6 +7,7 @@ import { SubmitButton } from "@modules/checkout/components/submit-button"
 import Input from "@modules/common/components/input"
 import { Checkbox, Label, Text } from "@medusajs/ui"
 import { ChangeEvent, useActionState, useState } from "react"
+import { useTranslations } from 'next-intl'
 
 type Props = {
   setCurrentView: (view: LOGIN_VIEW) => void
@@ -47,6 +48,7 @@ const Register = ({ setCurrentView }: Props) => {
   const [message, formAction] = useActionState(signup, null)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [formData, setFormData] = useState<FormData>(initialFormData)
+  const t = useTranslations('auth.register')
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -70,14 +72,12 @@ const Register = ({ setCurrentView }: Props) => {
       data-testid="register-page"
     >
       <Text className="text-4xl text-neutral-950 text-left mb-4">
-        Create your
-        <br />
-        account.
+        {t('title')}
       </Text>
       <form className="w-full flex flex-col" action={formAction}>
         <div className="flex flex-col w-full gap-y-4">
           <Input
-            label="Email"
+            label={t('email')}
             name="email"
             required
             type="email"
@@ -88,7 +88,7 @@ const Register = ({ setCurrentView }: Props) => {
             onChange={handleChange}
           />
           <Input
-            label="First name"
+            label={t('first_name')}
             name="first_name"
             required
             autoComplete="given-name"
@@ -98,7 +98,7 @@ const Register = ({ setCurrentView }: Props) => {
             onChange={handleChange}
           />
           <Input
-            label="Last name"
+            label={t('last_name')}
             name="last_name"
             required
             autoComplete="family-name"
@@ -108,7 +108,7 @@ const Register = ({ setCurrentView }: Props) => {
             onChange={handleChange}
           />
           <Input
-            label="Phone"
+            label={t('phone')}
             name="phone"
             required
             type="tel"
@@ -119,7 +119,7 @@ const Register = ({ setCurrentView }: Props) => {
             onChange={handleChange}
           />
           <Input
-            label="Password"
+            label={t('password')}
             name="password"
             required
             type="password"
@@ -146,7 +146,7 @@ const Register = ({ setCurrentView }: Props) => {
             htmlFor="terms-checkbox"
             data-testid="terms-label"
           >
-            I agree to the terms and conditions.
+            {t('terms_and_conditions')}
           </Label>
         </div>
         <SubmitButton
@@ -154,16 +154,16 @@ const Register = ({ setCurrentView }: Props) => {
           data-testid="register-button"
           disabled={!isValid}
         >
-          Register
+          {t('submit')}
         </SubmitButton>
       </form>
       <span className="text-center text-ui-fg-base text-small-regular mt-6">
-        Already a member?{" "}
+        {t('have_account')}{" "}
         <button
           onClick={() => setCurrentView(LOGIN_VIEW.LOG_IN)}
           className="underline"
         >
-          Log in
+          {t('sign_in')}
         </button>
         .
       </span>

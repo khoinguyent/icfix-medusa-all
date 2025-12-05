@@ -1,0 +1,69 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Summary: Category Status ==='\r"
+        expect "# "
+        send "echo 'Category ID: pcat_01KBPY6807G3PWWV5N8WZ9CRBV'\r"
+        expect "# "
+        send "echo 'Handle: ic-fix-face'\r"
+        expect "# "
+        send "echo 'Name: IC Fix Face'\r"
+        expect "# "
+        send "echo 'is_active: true'\r"
+        expect "# "
+        send "echo 'is_internal: false'\r"
+        expect "# "
+        send "echo 'Products with sales channel: 2'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Getting Publishable Key for Testing ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -t -c \"SELECT token FROM api_key WHERE type = 'publishable' ORDER BY created_at DESC LIMIT 1;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Testing Store API (will show key above) ==='\r"
+        expect "# "
+        send "echo 'Copy the key above and test with:'\r"
+        expect "# "
+        send "echo 'curl -H \"x-publishable-api-key: <key>\" https://icfix.duckdns.org/store/product-categories?handle=ic-fix-face'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Triggering Frontend Revalidation ==='\r"
+        expect "# "
+        send "curl -s -X POST 'https://store.icfix.vn/api/revalidate?secret=ed81a378f205e1549695f6f74ebcbd0b1d0fd0ca8e66a1439c92531d27dbe615&event=force' -H 'Content-Type: application/json' -d '{}'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Done ==='\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

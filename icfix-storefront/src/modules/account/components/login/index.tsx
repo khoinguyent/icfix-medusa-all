@@ -6,6 +6,7 @@ import Button from "@modules/common/components/button"
 import Input from "@modules/common/components/input"
 import { Checkbox, Text } from "@medusajs/ui"
 import { useActionState } from "react"
+import { useTranslations } from 'next-intl'
 
 type Props = {
   setCurrentView: (view: LOGIN_VIEW) => void
@@ -13,6 +14,7 @@ type Props = {
 
 const Login = ({ setCurrentView }: Props) => {
   const [message, formAction] = useActionState(login, null)
+  const t = useTranslations('auth.login')
 
   return (
     <div
@@ -20,23 +22,21 @@ const Login = ({ setCurrentView }: Props) => {
       data-testid="login-page"
     >
       <Text className="text-4xl text-neutral-950 text-left">
-        Log in for faster
-        <br />
-        checkout.
+        {t('title')}
       </Text>
       <form className="w-full" action={formAction}>
         <div className="flex flex-col w-full gap-y-2">
           <Input
-            label="Email"
+            label={t('email')}
             name="email"
             type="email"
-            title="Enter a valid email address."
+            title={t('email_placeholder')}
             autoComplete="email"
             required
             data-testid="email-input"
           />
           <Input
-            label="Password"
+            label={t('password')}
             name="password"
             type="password"
             autoComplete="current-password"
@@ -47,14 +47,14 @@ const Login = ({ setCurrentView }: Props) => {
           <div className="flex items-center gap-2">
             <Checkbox name="remember_me" data-testid="remember-me-checkbox" />
             <Text className="text-neutral-950 text-base-regular">
-              Remember me
+              {t('remember_me')}
             </Text>
           </div>
         </div>
         <ErrorMessage error={message} data-testid="login-error-message" />
         <div className="flex flex-col gap-2">
           <SubmitButton data-testid="sign-in-button" className="w-full mt-6">
-            Log in
+            {t('submit')}
           </SubmitButton>
           <Button
             variant="secondary"
@@ -62,7 +62,7 @@ const Login = ({ setCurrentView }: Props) => {
             className="w-full h-10"
             data-testid="register-button"
           >
-            Register
+            {t('create_account')}
           </Button>
         </div>
       </form>

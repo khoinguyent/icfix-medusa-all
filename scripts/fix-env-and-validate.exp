@@ -1,0 +1,94 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Current REVALIDATE_ENDPOINT ==='\r"
+        expect "# "
+        send "grep 'REVALIDATE_ENDPOINT' .env\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Fixing REVALIDATE_ENDPOINT (adding missing colon) ==='\r"
+        expect "# "
+        send "sed -i 's|REVALIDATE_ENDPOINT=https//|REVALIDATE_ENDPOINT=https://|g' .env\r"
+        expect "# "
+        send "echo 'Fixed'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Verifying fix ==='\r"
+        expect "# "
+        send "grep 'REVALIDATE_ENDPOINT' .env\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Validating docker-compose.yml ==='\r"
+        expect "# "
+        send "docker-compose config > /dev/null 2>&1 && echo 'docker-compose.yml is valid' || echo 'docker-compose.yml has errors'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking docker-compose file structure ==='\r"
+        expect "# "
+        send "grep -E 'REVALIDATE_ENDPOINT|REVALIDATE_SECRET' docker-compose.yml || echo 'REVALIDATE vars not found in docker-compose.yml'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Restarting backend container to apply changes ==='\r"
+        expect "# "
+        send "docker-compose restart medusa-backend || docker-compose restart icfix-backend || echo 'Container restart command failed'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Waiting 5 seconds for container to start ==='\r"
+        expect "# "
+        send "sleep 5\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Verifying container environment after restart ==='\r"
+        expect "# "
+        send "CONTAINER=icfix-backend\r"
+        expect "# "
+        send "docker exec \$CONTAINER env | grep REVALIDATE_ENDPOINT || echo 'Not found in container'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking container health ==='\r"
+        expect "# "
+        send "docker ps --filter name=icfix-backend --format '{{.Status}}'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Testing backend health endpoint ==='\r"
+        expect "# "
+        send "curl -s http://localhost:9000/health | head -1 || echo 'Health check failed'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

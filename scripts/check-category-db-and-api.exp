@@ -1,0 +1,49 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Querying Database for Category ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_user icfix_db -c \"SELECT id, handle, name, is_active, is_internal, rank FROM product_category WHERE handle LIKE '%ic-fix%' OR name LIKE '%IC Fix Face%' OR name LIKE '%Face%' ORDER BY created_at DESC LIMIT 10;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking Sales Channel Associations ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_user icfix_db -c \"SELECT pc.id, pc.handle, pc.name, pc.is_active, COUNT(pcs.sales_channel_id) as channel_count FROM product_category pc LEFT JOIN product_category_sales_channel pcs ON pc.id = pcs.product_category_id WHERE pc.handle LIKE '%ic-fix%' OR pc.name LIKE '%IC Fix Face%' OR pc.name LIKE '%Face%' GROUP BY pc.id, pc.handle, pc.name, pc.is_active ORDER BY pc.created_at DESC LIMIT 10;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Getting Sales Channel IDs ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_user icfix_db -c \"SELECT id, name FROM sales_channel LIMIT 5;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

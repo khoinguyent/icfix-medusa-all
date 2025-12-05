@@ -1,0 +1,69 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Getting Sales Channel ID ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -t -c \"SELECT id FROM sales_channel LIMIT 1;\" | tr -d ' '\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Verifying products have sales channel ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT COUNT(DISTINCT pcp.product_id) as product_count, COUNT(DISTINCT psc.sales_channel_id) as channel_count FROM product_category_product pcp JOIN product_sales_channel psc ON pcp.product_id = psc.product_id WHERE pcp.product_category_id = 'pcat_01KBPY6807G3PWWV5N8WZ9CRBV';\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Getting Publishable API Key ==='\r"
+        expect "# "
+        send "PUB_KEY=$(docker exec icfix-postgres psql -U icfix_admin icfix_db -t -c \"SELECT token FROM api_key WHERE type = 'publishable' ORDER BY created_at DESC LIMIT 1;\" | tr -d ' ')\r"
+        expect "# "
+        send "echo \"Publishable Key: \$PUB_KEY\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Testing Store API with publishable key ==='\r"
+        expect "# "
+        send "curl -s -H \"x-publishable-api-key: \$PUB_KEY\" 'http://localhost:9000/store/product-categories?handle=ic-fix-face' | jq -r '.product_categories | length'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Testing all categories ==='\r"
+        expect "# "
+        send "curl -s -H \"x-publishable-api-key: \$PUB_KEY\" 'http://localhost:9000/store/product-categories?limit=100' | jq -r '.product_categories[]?.handle'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Triggering frontend revalidation ==='\r"
+        expect "# "
+        send "curl -s -X POST 'https://store.icfix.vn/api/revalidate?secret=ed81a378f205e1549695f6f74ebcbd0b1d0fd0ca8e66a1439c92531d27dbe615&event=force' -H 'Content-Type: application/json' -d '{}' | jq -r '.revalidated'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+
