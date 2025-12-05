@@ -1,0 +1,68 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Fixing vim swap file issue ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '1. Checking for swap file...'\r"
+        expect "# "
+        send "ls -la .docker-compose.yml.swp 2>/dev/null && echo 'Swap file found' || echo 'No swap file'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '2. Checking if process 115225 is still running...'\r"
+        expect "# "
+        send "ps aux | grep 115225 | grep -v grep || echo 'Process not found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '3. Killing any vim processes editing docker-compose.yml...'\r"
+        expect "# "
+        send "pkill -f 'vim.*docker-compose.yml' 2>/dev/null && echo 'Killed vim process' || echo 'No vim process found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '4. Removing swap file...'\r"
+        expect "# "
+        send "rm -f .docker-compose.yml.swp && echo '✓ Swap file removed' || echo 'No swap file to remove'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '5. Verifying docker-compose.yml is accessible...'\r"
+        expect "# "
+        send "test -f docker-compose.yml && echo '✓ File exists and is accessible' || echo '✗ File not found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo 'You can now safely edit docker-compose.yml'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

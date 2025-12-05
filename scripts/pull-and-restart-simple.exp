@@ -1,0 +1,52 @@
+#!/usr/bin/expect -f
+
+set timeout 180
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Pulling latest image ==='\r"
+        expect "# "
+        send "docker pull ghcr.io/khoinguyent/icfix-backend:latest\r"
+        expect {
+            "Downloaded" { exp_continue }
+            "already up to date" { exp_continue }
+            "# " { }
+        }
+        expect "# "
+        send "echo '=== Updating docker-compose.yml ==='\r"
+        expect "# "
+        send "sed -i 's|ghcr.io/khoinguyent/icfix-backend:.*|ghcr.io/khoinguyent/icfix-backend:latest|g' docker-compose.yml\r"
+        expect "# "
+        send "echo '=== Restarting medusa-backend ==='\r"
+        expect "# "
+        send "docker-compose stop medusa-backend\r"
+        expect "# "
+        send "docker-compose up -d medusa-backend\r"
+        expect "# "
+        send "sleep 5\r"
+        expect "# "
+        send "docker-compose ps medusa-backend\r"
+        expect "# "
+        send "docker-compose logs --tail=20 medusa-backend\r"
+        expect "# "
+        send "exit\r"
+    }
+}
+
+expect eof
+

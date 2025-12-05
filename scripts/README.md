@@ -1,213 +1,83 @@
-# 🔧 Scripts Directory
+# Deployment Scripts
 
-Automation and utility scripts for the Medusa platform.
+This directory contains scripts for deploying and managing the Medusa backend on the production server.
 
----
+## Security Notice
 
-## 🤖 Build Failure Automation Scripts
+**IMPORTANT**: These scripts require sensitive credentials (server passwords, API tokens, etc.). These credentials should **NEVER** be committed to version control.
 
-### **get-build-logs.sh** ⭐
-**Purpose:** Fetch logs from the latest failed GitHub Actions build
+## Setup
 
-**Usage:**
+1. **Copy the example environment file:**
+   ```bash
+   cp scripts/.env.example scripts/.env
+   ```
+
+2. **Edit `scripts/.env` and fill in your actual credentials:**
+   ```bash
+   # Server Configuration
+   SERVER_IP=your_server_ip
+   SERVER_USER=your_username
+   SERVER_PASS=your_password
+   
+   # GitHub Configuration
+   GITHUB_TOKEN=your_github_token
+   GITHUB_USER=your_github_username
+   
+   # Frontend Revalidation
+   STOREFRONT_URL=https://your-storefront.com
+   REVALIDATE_SECRET=your_revalidate_secret
+   ```
+
+3. **Verify `.env` is in `.gitignore`:**
+   The `scripts/.env` file should be ignored by git. Check that it's listed in `.gitignore`.
+
+## Usage
+
+### Expect Scripts (for SSH automation)
+
+All expect scripts automatically load credentials from `scripts/.env`:
+
 ```bash
-./scripts/get-build-logs.sh
+./scripts/check-and-cleanup-docker.exp
+./scripts/update-github-token.exp
 ```
 
-**Features:**
-- Fetches latest failed build logs
-- Formats for Cursor AI
-- Includes Dockerfile, workflow config, and build context
-- Copy-paste ready output
+### Bash Scripts
 
-**Use when:** You notice a build failed and want to quickly debug it
+Bash scripts can load environment variables from `scripts/.env`:
 
----
-
-### **watch-builds.sh** 🔄
-**Purpose:** Continuously monitor GitHub Actions for build failures
-
-**Usage:**
 ```bash
-# Run in foreground
-./scripts/watch-builds.sh
+# Option 1: Source the loader
+source scripts/load-env.sh
+./scripts/manual-revalidate-frontend.sh
 
-# Run in background
-nohup ./scripts/watch-builds.sh > logs/watcher.log 2>&1 &
+# Option 2: Scripts will auto-load if .env exists
+./scripts/manual-revalidate-frontend.sh
 ```
 
-**Features:**
-- Checks for failures every 30 seconds (configurable)
-- Desktop notifications on macOS
-- Auto-generates debug reports
-- Auto-opens in Cursor (if CLI installed)
-- Saves reports to `logs/github-actions/`
+## Available Scripts
 
-**Use when:** You're actively developing and want automatic failure detection
+- `check-and-cleanup-docker.exp` - Check Docker disk usage and clean up unused resources
+- `update-github-token.exp` - Update GitHub token for GHCR authentication
+- `manual-revalidate-frontend.sh` - Manually trigger frontend cache revalidation
+- `deploy-backend-server.exp` - Deploy latest backend image to server
+- `quick-deploy-backend.exp` - Quick deployment script
 
-**Configuration:**
-```bash
-# Custom check interval
-WATCH_INTERVAL=60 ./scripts/watch-builds.sh
-```
+## Troubleshooting
 
----
+If you see errors about missing environment variables:
 
-### **auto-fix-build.sh** 🚀
-**Purpose:** Generate automated fix request for Cursor AI
+1. Ensure `scripts/.env` exists and is properly formatted
+2. Check that all required variables are set (no empty values)
+3. Verify file permissions: `chmod 600 scripts/.env` (readable only by owner)
 
-**Usage:**
-```bash
-./scripts/auto-fix-build.sh
-```
+## Security Best Practices
 
-**Features:**
-- Fetches latest failed build
-- Creates `.github-build-fix-request.md`
-- Auto-opens in Cursor
-- Ready-to-use prompt for AI
-
-**Use when:** You want the fastest path from failure to fix
-
----
-
-## 🚢 Deployment Scripts
-
-### **check-ghcr.sh**
-**Purpose:** Verify Docker images in GitHub Container Registry
-
-**Usage:**
-```bash
-./scripts/check-ghcr.sh
-```
-
-**Features:**
-- Checks if images exist in GHCR
-- Lists available tags
-- Attempts to pull images
-- Shows authentication status
-
----
-
-### **deploy-latest.sh**
-**Purpose:** Deploy the latest Docker image from GHCR
-
-**Usage:**
-```bash
-./scripts/deploy-latest.sh
-```
-
----
-
-### **pull-ghcr.sh**
-**Purpose:** Pull latest images from GHCR
-
-**Usage:**
-```bash
-./scripts/pull-ghcr.sh
-```
-
----
-
-## 🔍 Search & Indexing Scripts
-
-### **setup-search.sh**
-**Purpose:** Initialize MeiliSearch for product search
-
-**Usage:**
-```bash
-./scripts/setup-search.sh
-```
-
-**Or inside Docker:**
-```bash
-docker exec -it icfix-backend npm run init-search
-```
-
----
-
-### **manual-reindex.sh**
-**Purpose:** Manually trigger MeiliSearch reindexing
-
-**Usage:**
-```bash
-./scripts/manual-reindex.sh
-```
-
----
-
-## 📋 Quick Reference
-
-| Script | Purpose | When to Use |
-|--------|---------|-------------|
-| `get-build-logs.sh` | Get logs once | Build failed, need quick debug |
-| `watch-builds.sh` | Monitor continuously | Active development |
-| `auto-fix-build.sh` | Auto-fix with AI | Fastest fix workflow |
-| `check-ghcr.sh` | Verify GHCR images | Deployment issues |
-| `deploy-latest.sh` | Deploy new version | After successful build |
-| `setup-search.sh` | Initialize search | First setup |
-| `manual-reindex.sh` | Reindex products | Search not working |
-
----
-
-## 🎯 Recommended Workflow
-
-### For Development:
-```bash
-# Start the watcher
-./scripts/watch-builds.sh
-
-# It will alert you automatically when builds fail
-# And prepare everything for Cursor
-```
-
-### For Quick Fixes:
-```bash
-# Get logs and fix
-./scripts/auto-fix-build.sh
-
-# Tell Cursor: "Read .github-build-fix-request.md and fix all issues"
-```
-
-### For Manual Debugging:
-```bash
-# Get formatted logs
-./scripts/get-build-logs.sh
-
-# Copy output to Cursor
-```
-
----
-
-## 📚 More Information
-
-- **[AUTOMATION_GUIDE.md](../AUTOMATION_GUIDE.md)** - Complete automation setup guide
-- **[QUICK_DEBUG_GUIDE.md](../QUICK_DEBUG_GUIDE.md)** - Quick reference for debugging
-- **[GITHUB_ACTIONS_DEBUG.md](../GITHUB_ACTIONS_DEBUG.md)** - Detailed debugging guide
-
----
-
-## 🔧 Setup
-
-### Prerequisites:
-```bash
-# Install GitHub CLI
-brew install gh  # macOS
-sudo apt install gh  # Linux
-
-# Authenticate
-gh auth login
-
-# Install Cursor CLI (optional but recommended)
-# In Cursor: Cmd+Shift+P → "Install 'cursor' command in PATH"
-```
-
-### Make scripts executable:
-```bash
-chmod +x scripts/*.sh
-```
-
----
-
-**Last Updated:** 2025-10-14
-
+- ✅ Use `scripts/.env` for credentials (gitignored)
+- ✅ Set restrictive permissions: `chmod 600 scripts/.env`
+- ✅ Never commit `.env` files
+- ✅ Rotate credentials regularly
+- ✅ Use environment variables in CI/CD systems
+- ❌ Never hardcode credentials in scripts
+- ❌ Never commit credentials to git

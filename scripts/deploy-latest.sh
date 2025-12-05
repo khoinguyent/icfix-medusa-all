@@ -8,7 +8,7 @@ export MEILISEARCH_API_KEY=${MEILISEARCH_API_KEY:-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5
 
 # Pull latest image
 echo "📦 Pulling latest image..."
-docker pull ghcr.io/khoinguyent/icfix-medusa-all:latest
+docker pull ghcr.io/khoinguyent/icfix-backend:latest
 
 # Restart services
 echo "🔄 Restarting services..."

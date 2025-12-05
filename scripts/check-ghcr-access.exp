@@ -1,0 +1,60 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Testing GHCR Access ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '1. Current Docker login status:'\r"
+        expect "# "
+        send "docker info 2>&1 | grep -i 'username\|registry' | head -3\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '2. Testing GHCR authentication...'\r"
+        expect "# "
+        send "echo 'ghcr.io' | docker-credential-desktop get 2>&1 || echo 'Credential helper not available'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '3. Checking if token needs refresh...'\r"
+        expect "# "
+        send "cat ~/.docker/config.json | jq -r '.auths.\"ghcr.io\".auth' 2>/dev/null | base64 -d | cut -d: -f1 || echo 'Cannot decode token'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '4. Testing manual login (will show if token is invalid)...'\r"
+        expect "# "
+        send "docker logout ghcr.io 2>&1\r"
+        expect "# "
+        send "echo 'Logged out. To login again, you need a GitHub Personal Access Token (PAT) with read:packages permission'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

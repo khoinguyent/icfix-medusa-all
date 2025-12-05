@@ -1,0 +1,64 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Checking GitHub Authentication ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '1. Checking for GitHub token in environment...'\r"
+        expect "# "
+        send "env | grep -i github || echo 'No GITHUB_* env vars found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '2. Checking Docker login status for GHCR...'\r"
+        expect "# "
+        send "cat ~/.docker/config.json 2>/dev/null | grep -A 5 'ghcr.io' || echo 'No GHCR credentials in Docker config'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '3. Checking if we can pull from GHCR...'\r"
+        expect "# "
+        send "docker pull ghcr.io/khoinguyent/icfix-backend:latest 2>&1 | head -20 || echo 'Pull failed or image not found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '4. Checking docker-compose.yml for image reference...'\r"
+        expect "# "
+        send "grep -i 'ghcr\|image:' docker-compose.yml 2>/dev/null | head -5 || echo 'No GHCR image reference found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '5. Checking GitHub Actions secrets (if accessible)...'\r"
+        expect "# "
+        send "ls -la ~/.github* 2>/dev/null || echo 'No GitHub config files found'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

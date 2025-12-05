@@ -1,0 +1,86 @@
+#!/usr/bin/expect -f
+
+# Load environment variables
+set script_dir [file dirname [file normalize [info script]]]
+source [file join $script_dir load-env.exp]
+
+set timeout 120
+set server_ip $::server_ip
+set server_user $::server_user
+set server_pass $::server_pass
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Disk Space Overview ==='\r"
+        expect "# "
+        send "df -h /\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Docker Disk Usage ==='\r"
+        expect "# "
+        send "docker system df\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Docker Images ==='\r"
+        expect "# "
+        send "docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}' | head -20\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Stopped Containers ==='\r"
+        expect "# "
+        send "docker ps -a --filter 'status=exited' --format 'table {{.ID}}\t{{.Image}}\t{{.Status}}' | head -10\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Cleaning Up: Removing unused images, containers, networks, and build cache ==='\r"
+        expect "# "
+        send "docker system prune -af\r"
+        expect {
+            "Total reclaimed space:" {
+                send "echo 'Cleanup completed'\r"
+                exp_continue
+            }
+            "# " {
+                send "echo 'Cleanup done'\r"
+                exp_continue
+            }
+        }
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Removing unused volumes ==='\r"
+        expect "# "
+        send "docker volume prune -f\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Docker Disk Usage After Cleanup ==='\r"
+        expect "# "
+        send "docker system df\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

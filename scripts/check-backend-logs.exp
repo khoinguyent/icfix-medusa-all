@@ -1,0 +1,44 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Medusa Backend Logs (Last 50 lines) ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "docker-compose logs --tail=50 medusa-backend\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Container Status ==='\r"
+        expect "# "
+        send "docker-compose ps medusa-backend\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

@@ -1,0 +1,75 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+set new_image "ghcr.io/khoinguyent/icfix-backend:latest"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Updating to latest GHCR image ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '1. Current image in docker-compose.yml:'\r"
+        expect "# "
+        send "grep 'image:' docker-compose.yml | grep -i 'ghcr\\|medusa' | head -1\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '2. Backing up docker-compose.yml...'\r"
+        expect "# "
+        send "cp docker-compose.yml docker-compose.yml.backup.\$(date +%Y%m%d_%H%M%S)\r"
+        expect "# "
+        send "echo 'Backup created'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '3. Updating image to: $new_image'\r"
+        expect "# "
+        send "sed -i \"s|image:.*ghcr.io.*|image: $new_image|g\" docker-compose.yml\r"
+        expect "# "
+        send "echo 'Updated'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '4. Verifying update...'\r"
+        expect "# "
+        send "grep 'image:' docker-compose.yml | grep -i 'ghcr\\|medusa' | head -1\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '5. Validating docker-compose.yml...'\r"
+        expect "# "
+        send "docker-compose config > /dev/null 2>&1 && echo '✓ Valid' || echo '✗ Invalid'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '6. Pulling new image...'\r"
+        expect "# "
+        send "docker pull $new_image 2>&1 | tail -3\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

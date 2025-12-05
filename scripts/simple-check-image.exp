@@ -1,0 +1,72 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Docker Image Check for Commit df27e02 ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '1. Pulling latest image...'\r"
+        expect "# "
+        send "docker pull ghcr.io/khoinguyent/icfix-backend:latest\r"
+        expect {
+            "Downloaded" {
+                send "echo 'Image downloaded successfully'\r"
+                exp_continue
+            }
+            "already up to date" {
+                send "echo 'Image already up to date'\r"
+                exp_continue
+            }
+            "# " {
+                send "echo 'Pull completed'\r"
+                exp_continue
+            }
+        }
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '2. Local images:'\r"
+        expect "# "
+        send "docker images ghcr.io/khoinguyent/icfix-backend --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.ID}}\\t{{.CreatedAt}}'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '3. Image creation time:'\r"
+        expect "# "
+        send "docker inspect ghcr.io/khoinguyent/icfix-backend:latest --format '{{.Created}}' 2>/dev/null || echo 'Cannot inspect image'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '4. Image digest:'\r"
+        expect "# "
+        send "docker inspect ghcr.io/khoinguyent/icfix-backend:latest --format '{{index .RepoDigests 0}}' 2>/dev/null || echo 'No digest found'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

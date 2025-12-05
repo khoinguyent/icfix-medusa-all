@@ -1,0 +1,80 @@
+#!/usr/bin/expect -f
+
+# Load environment variables
+set script_dir [file dirname [file normalize [info script]]]
+source [file join $script_dir load-env.exp]
+
+set timeout 30
+set server_ip $::server_ip
+set server_user $::server_user
+set server_pass $::server_pass
+set github_token $::github_token
+set github_user $::github_user
+
+# Validate GitHub credentials
+if {$github_token == "" || $github_user == ""} {
+    puts stderr "Error: GITHUB_TOKEN and GITHUB_USER must be set in scripts/.env"
+    exit 1
+}
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Updating GitHub Token ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '1. Logging out of GHCR...'\r"
+        expect "# "
+        send "docker logout ghcr.io 2>&1\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '2. Logging in with new token...'\r"
+        expect "# "
+        send "echo '$github_token' | docker login ghcr.io -u $github_user --password-stdin\r"
+        expect {
+            "Login Succeeded" {
+                send "echo '✓ Login successful'\r"
+                exp_continue
+            }
+            "# " {
+                send "echo 'Login completed'\r"
+                exp_continue
+            }
+        }
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '3. Verifying authentication...'\r"
+        expect "# "
+        send "docker pull ghcr.io/$github_user/icfix-backend:latest 2>&1 | head -10\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '4. Checking Docker config...'\r"
+        expect "# "
+        send "cat ~/.docker/config.json | grep -A 3 'ghcr.io' || echo 'No GHCR config found'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

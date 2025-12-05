@@ -1,0 +1,43 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Killing vim process and cleaning swap file ==='\r"
+        expect "# "
+        send "kill -9 115225 2>/dev/null && echo '✓ Killed process 115225' || echo 'Process already gone'\r"
+        expect "# "
+        send "sleep 1\r"
+        expect "# "
+        send "rm -f .docker-compose.yml.swp && echo '✓ Removed swap file'\r"
+        expect "# "
+        send "echo ''\r"
+        send "echo 'Done! You can now edit docker-compose.yml'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

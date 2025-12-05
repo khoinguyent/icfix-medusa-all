@@ -2,9 +2,23 @@
 
 # Script to manually trigger frontend cache revalidation
 # Usage: ./scripts/manual-revalidate-frontend.sh
+# 
+# Environment variables can be set in scripts/.env or as shell environment variables
+
+# Load environment variables from scripts/.env if it exists
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
+fi
 
 STOREFRONT_URL="${STOREFRONT_URL:-https://store.icfix.vn}"
-REVALIDATE_SECRET="${REVALIDATE_SECRET:-ed81a378f205e1549695f6f74ebcbd0b1d0fd0ca8e66a1439c92531d27dbe615}"
+REVALIDATE_SECRET="${REVALIDATE_SECRET:-}"
+
+if [ -z "$REVALIDATE_SECRET" ]; then
+    echo "Error: REVALIDATE_SECRET must be set in scripts/.env or as an environment variable" >&2
+    echo "Please copy scripts/.env.example to scripts/.env and fill in your credentials." >&2
+    exit 1
+fi
 
 echo "======================================"
 echo "Manual Frontend Cache Revalidation"

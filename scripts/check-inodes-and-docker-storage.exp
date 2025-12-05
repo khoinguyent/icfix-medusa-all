@@ -1,0 +1,60 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Disk Space (bytes) ==='\r"
+        expect "# "
+        send "df -h /\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Inode Usage ==='\r"
+        expect "# "
+        send "df -i /\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Docker Storage Location ==='\r"
+        expect "# "
+        send "docker info 2>/dev/null | grep -E 'Docker Root Dir|Storage Driver' || echo 'Could not get Docker info'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Docker Storage Directory Size ==='\r"
+        expect "# "
+        send "du -sh /var/lib/docker 2>/dev/null || echo 'Could not check Docker storage'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Large Directories (top 10) ==='\r"
+        expect "# "
+        send "du -h --max-depth=1 / 2>/dev/null | sort -rh | head -10\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

@@ -1,0 +1,71 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+set image_name "ghcr.io/khoinguyent/icfix-backend:latest"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Updating docker-compose.yml with GHCR image ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '1. Checking current docker-compose.yml...'\r"
+        expect "# "
+        send "grep -A 5 'medusa-backend\\|icfix-backend' docker-compose.yml 2>/dev/null | head -10 || echo 'File not found or different structure'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '2. Backing up current docker-compose.yml...'\r"
+        expect "# "
+        send "cp docker-compose.yml docker-compose.yml.backup.\$(date +%Y%m%d_%H%M%S) 2>/dev/null && echo 'Backup created' || echo 'Backup failed'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '3. Updating docker-compose.yml to use GHCR image...'\r"
+        expect "# "
+        send "sed -i 's|build:.*|image: $image_name|g' docker-compose.yml 2>/dev/null\r"
+        expect "# "
+        send "sed -i '/dockerfile:/d' docker-compose.yml 2>/dev/null\r"
+        expect "# "
+        send "sed -i '/context:/d' docker-compose.yml 2>/dev/null\r"
+        expect "# "
+        send "echo 'Updated'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '4. Verifying changes...'\r"
+        expect "# "
+        send "grep -A 5 'medusa-backend\\|icfix-backend' docker-compose.yml | head -10\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '5. Validating docker-compose.yml syntax...'\r"
+        expect "# "
+        send "docker-compose config > /dev/null 2>&1 && echo '✓ Valid docker-compose.yml' || echo '✗ Invalid docker-compose.yml syntax'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

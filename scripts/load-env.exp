@@ -1,0 +1,88 @@
+#!/usr/bin/expect -f
+# Helper script to load environment variables for expect scripts
+# This file is sourced by other expect scripts using: source [file join $script_dir load-env.exp]
+
+# Get the directory where this script is located
+set load_env_script [info script]
+if {$load_env_script == ""} {
+    # If called via source, use the caller's directory
+    set script_dir [file dirname [file normalize [info script]]]
+} else {
+    set script_dir [file dirname [file normalize $load_env_script]]
+}
+
+set env_file [file join $script_dir .env]
+
+if {![file exists $env_file]} {
+    puts stderr "Error: $env_file not found!"
+    puts stderr "Please copy scripts/.env.example to scripts/.env and fill in your credentials."
+    exit 1
+}
+
+# Read environment variables from .env file
+set fp [open $env_file r]
+while {[gets $fp line] >= 0} {
+    # Skip comments and empty lines
+    set trimmed [string trim $line]
+    if {[string match "#*" $trimmed] || $trimmed == ""} {
+        continue
+    }
+    # Parse KEY=VALUE
+    if {[regexp {^([^=]+)=(.*)$} $line -> key value]} {
+        set key [string trim $key]
+        set value [string trim $value]
+        # Remove quotes if present
+        if {[string match {"*"} $value] || [string match {'*'} $value]} {
+            set value [string range $value 1 end-1]
+        }
+        set ::env($key) $value
+    }
+}
+close $fp
+
+# Set variables for expect scripts (use global scope)
+if {[info exists ::env(SERVER_IP)]} {
+    set ::server_ip $::env(SERVER_IP)
+} else {
+    puts stderr "Error: SERVER_IP not found in $env_file"
+    exit 1
+}
+
+if {[info exists ::env(SERVER_USER)]} {
+    set ::server_user $::env(SERVER_USER)
+} else {
+    puts stderr "Error: SERVER_USER not found in $env_file"
+    exit 1
+}
+
+if {[info exists ::env(SERVER_PASS)]} {
+    set ::server_pass $::env(SERVER_PASS)
+} else {
+    puts stderr "Error: SERVER_PASS not found in $env_file"
+    exit 1
+}
+
+if {[info exists ::env(GITHUB_TOKEN)]} {
+    set ::github_token $::env(GITHUB_TOKEN)
+} else {
+    set ::github_token ""
+}
+
+if {[info exists ::env(GITHUB_USER)]} {
+    set ::github_user $::env(GITHUB_USER)
+} else {
+    set ::github_user ""
+}
+
+if {[info exists ::env(STOREFRONT_URL)]} {
+    set ::storefront_url $::env(STOREFRONT_URL)
+} else {
+    set ::storefront_url "https://store.icfix.vn"
+}
+
+if {[info exists ::env(REVALIDATE_SECRET)]} {
+    set ::revalidate_secret $::env(REVALIDATE_SECRET)
+} else {
+    set ::revalidate_secret ""
+}
+

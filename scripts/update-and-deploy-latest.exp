@@ -1,0 +1,74 @@
+#!/usr/bin/expect -f
+
+set timeout 600
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Updating deploy script and docker-compose ==='\r"
+        expect "# "
+        # Update deploy-latest.sh to use icfix-backend:latest
+        send "sed -i 's|ghcr.io/khoinguyent/icfix-medusa-all:latest|ghcr.io/khoinguyent/icfix-backend:latest|g' scripts/deploy-latest.sh\r"
+        expect "# "
+        # Update docker-compose-prod.yml to use :latest instead of pinned SHA
+        send "sed -i 's|ghcr.io/khoinguyent/icfix-medusa-all:sha-.*|ghcr.io/khoinguyent/icfix-backend:latest|g' docker-compose-prod.yml\r"
+        expect "# "
+        send "echo '✓ Files updated'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Running deployment script ==='\r"
+        expect "# "
+        send "bash scripts/deploy-latest.sh\r"
+        expect {
+            "Deployment complete" {
+                send "echo '✓ Deployment completed'\r"
+                exp_continue
+            }
+            "ERROR" {
+                send "echo '✗ Error occurred'\r"
+                exp_continue
+            }
+            "# " {
+                # Check if we're back at prompt
+                send "echo 'Command finished'\r"
+                exp_continue
+            }
+            timeout {
+                send "\r"
+                exp_continue
+            }
+        }
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking service status ==='\r"
+        expect "# "
+        send "docker-compose -f docker-compose-prod.yml ps medusa-backend\r"
+        expect "# "
+        send "docker-compose -f docker-compose-prod.yml logs --tail=20 medusa-backend\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+
