@@ -53,7 +53,8 @@ RUN chmod +x /app/scripts/wait-for-db.sh
 RUN npm run build
 
 # Remove dev dependencies after build to reduce image size
-RUN npm prune --production
+# Use --legacy-peer-deps to handle peer dependency conflicts
+RUN npm prune --production --legacy-peer-deps
 
 # Create symlink from .medusa/server/plugins to main plugins directory
 # This allows Medusa to find plugins from the build directory
