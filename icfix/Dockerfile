@@ -97,9 +97,19 @@ RUN cp medusa-config.ts .medusa/server/medusa-config.ts && \
     echo "✓ Copied medusa-config.ts to .medusa/server"
 
 # Change to .medusa/server and install dependencies
+# Use --production=false to ensure all dependencies are available
+# Also create symlink to parent node_modules to ensure dependencies are accessible
 WORKDIR /app/.medusa/server
-RUN npm install --legacy-peer-deps && \
-    echo "✓ Installed dependencies in .medusa/server"
+RUN npm install --legacy-peer-deps --production=false && \
+    echo "✓ Installed dependencies in .medusa/server" && \
+    echo "=== Creating symlink to parent node_modules for dependency resolution ===" && \
+    ln -sf /app/node_modules /app/.medusa/server/parent_node_modules && \
+    echo "✓ Created symlink to parent node_modules" && \
+    echo "=== Verifying workflows-sdk ===" && \
+    (ls -la node_modules/@medusajs/workflows-sdk 2>/dev/null || \
+     ls -la node_modules/@medusajs/framework/node_modules/@medusajs/workflows-sdk 2>/dev/null || \
+     ls -la ../node_modules/@medusajs/framework/workflows-sdk 2>/dev/null || \
+     echo "WARNING: workflows-sdk not found in expected location")
 
 # Start Medusa from .medusa/server directory
 # Set NODE_ENV to production for production mode
