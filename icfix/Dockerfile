@@ -86,32 +86,27 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:9000/health || exit 1
 
-# After build, we need to work with .medusa/server directory
-# According to Medusa docs: https://docs.medusajs.com/learn/build#start-built-medusa-application
-# 1. Copy medusa-config.ts to .medusa/server (or use env vars)
-# 2. Install dependencies in .medusa/server
-# 3. Run from .medusa/server
+# After build, setup for production run
+# Instead of installing dependencies in .medusa/server (which creates version conflicts),
+# we'll use the parent node_modules with NODE_PATH
 
 # Copy medusa-config.ts to .medusa/server so it can be found
 RUN cp medusa-config.ts .medusa/server/medusa-config.ts && \
     echo "✓ Copied medusa-config.ts to .medusa/server"
 
-# Change to .medusa/server and install dependencies
-# Use --production=false to ensure all dependencies are available
-# Also create symlink to parent node_modules to ensure dependencies are accessible
-WORKDIR /app/.medusa/server
-RUN npm install --legacy-peer-deps --production=false && \
-    echo "✓ Installed dependencies in .medusa/server" && \
-    echo "=== Creating symlink to parent node_modules for dependency resolution ===" && \
-    ln -sf /app/node_modules /app/.medusa/server/parent_node_modules && \
-    echo "✓ Created symlink to parent node_modules" && \
-    echo "=== Verifying workflows-sdk ===" && \
-    (ls -la node_modules/@medusajs/workflows-sdk 2>/dev/null || \
-     ls -la node_modules/@medusajs/framework/node_modules/@medusajs/workflows-sdk 2>/dev/null || \
-     ls -la ../node_modules/@medusajs/framework/workflows-sdk 2>/dev/null || \
-     echo "WARNING: workflows-sdk not found in expected location")
+# Create symlink from .medusa/server/node_modules to parent node_modules
+# This ensures all dependencies are accessible without version conflicts
+RUN ln -sf /app/node_modules /app/.medusa/server/node_modules && \
+    echo "✓ Created symlink: .medusa/server/node_modules -> /app/node_modules"
 
-# Start Medusa from .medusa/server directory
+# Change to .medusa/server for running the application
+WORKDIR /app/.medusa/server
+
 # Set NODE_ENV to production for production mode
 ENV NODE_ENV=production
+
+# Set NODE_PATH to include parent node_modules for module resolution
+ENV NODE_PATH=/app/node_modules:/app/.medusa/server/node_modules
+
+# Start Medusa from .medusa/server directory
 CMD ["npm", "start"]
