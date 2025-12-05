@@ -1,10 +1,12 @@
 name: Build and Push to GHCR
 
-on:
-  push:
-    branches: [ main, medusa-meilisearch ]
-  pull_request:
-    branches: [ main ]
+# DISABLED: This workflow is disabled to avoid duplicate builds
+# The deploy-backend.yml workflow handles building icfix-backend:latest
+# on:
+#   push:
+#     branches: [ main, medusa-meilisearch ]
+#   pull_request:
+#     branches: [ main ]
 
 env:
   REGISTRY: ghcr.io
