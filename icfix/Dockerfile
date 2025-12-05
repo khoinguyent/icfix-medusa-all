@@ -52,7 +52,12 @@ RUN echo "=== PLUGIN SETUP ===" && \
 RUN chmod +x /app/scripts/wait-for-db.sh
 
 # Build the project (requires dev dependencies)
-RUN npm run build
+# Verify build output exists after build
+RUN npm run build && \
+    echo "=== Verifying build output ===" && \
+    ls -la .medusa/ 2>/dev/null || (echo "ERROR: .medusa directory not found after build!" && exit 1) && \
+    ls -la .medusa/server/ 2>/dev/null || (echo "ERROR: .medusa/server directory not found after build!" && exit 1) && \
+    echo "✓ Build output verified"
 
 # Remove dev dependencies after build to reduce image size
 # Use --legacy-peer-deps to handle peer dependency conflicts
@@ -80,6 +85,15 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:9000/health || exit 1
 
-# Start Medusa using npm start (which runs "medusa start")
-# This ensures the CLI can properly resolve the built application
-CMD ["npm", "start"]
+# Start Medusa from the built output directory
+# According to Medusa docs, after build, you need to:
+# 1. Install dependencies in .medusa/server
+# 2. Run npm start from .medusa/server
+WORKDIR /app/.medusa/server
+RUN npm install --legacy-peer-deps
+
+# Change back to /app for the CMD
+WORKDIR /app
+
+# Start from .medusa/server directory where the built application is
+CMD ["sh", "-c", "cd .medusa/server && npm start"]
