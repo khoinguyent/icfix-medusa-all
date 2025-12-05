@@ -2,7 +2,7 @@ name: Notify on Build Failure
 
 on:
   workflow_run:
-    workflows: ["Build and Push to GHCR", "Build and Push Backend Docker Image"]
+    workflows: ["Build and Push Backend Docker Image"]
     types:
       - completed
 
@@ -25,12 +25,8 @@ jobs:
             const commitSha = context.payload.workflow_run.head_sha.substring(0, 7);
             
             // Create an issue for failed build
-            const issue = await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `🚨 Build Failed: ${workflowName} on ${branch}`,
-              body: `## Build Failure Alert
-            
+            const bodyText = `## Build Failure Alert
+
 **Workflow:** ${workflowName}
 **Branch:** ${branch}
 **Commit:** ${commitSha}
@@ -59,7 +55,13 @@ gh run view ${context.payload.workflow_run.id} --log-failed
 \`\`\`
 
 ---
-This issue was automatically created by the notify-on-failure workflow.`,
+This issue was automatically created by the notify-on-failure workflow.`;
+            
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Build Failed: ${workflowName} on ${branch}`,
+              body: bodyText,
               labels: ['bug', 'build-failure', 'automated']
             });
             
