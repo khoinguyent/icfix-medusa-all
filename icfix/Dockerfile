@@ -6,11 +6,13 @@ WORKDIR /app
 
 # Install system dependencies including curl for health checks
 # Install packages individually to avoid cross-platform build issues
+# Skip trigger scripts that cause issues in cross-platform builds
 RUN apk update && \
-    apk add --no-cache netcat-openbsd && \
-    apk add --no-cache curl && \
-    apk add --no-cache wget && \
-    rm -rf /var/cache/apk/*
+    apk add --no-cache netcat-openbsd curl wget || \
+    (apk update && apk add --no-cache netcat-openbsd && \
+     apk add --no-cache curl && \
+     apk add --no-cache wget) && \
+    rm -rf /var/cache/apk/* || true
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
