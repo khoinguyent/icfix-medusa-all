@@ -1,0 +1,108 @@
+name: Notify on Build Failure
+
+on:
+  workflow_run:
+    workflows: ["Build and Push to GHCR", "Build and Push Backend Docker Image"]
+    types:
+      - completed
+
+jobs:
+  notify-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Create Issue on Failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.payload.workflow_run.id}`;
+            const workflowName = context.payload.workflow_run.name;
+            const branch = context.payload.workflow_run.head_branch;
+            const commitSha = context.payload.workflow_run.head_sha.substring(0, 7);
+            
+            // Create an issue for failed build
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Build Failed: ${workflowName} on ${branch}`,
+              body: `## Build Failure Alert
+            
+**Workflow:** ${workflowName}
+**Branch:** ${branch}
+**Commit:** ${commitSha}
+**Run URL:** ${runUrl}
+
+### Quick Debug Steps
+
+1. **Fetch logs locally:**
+   \`\`\`bash
+   ./scripts/get-build-logs.sh
+   \`\`\`
+
+2. **Auto-fix with Cursor:**
+   \`\`\`bash
+   ./scripts/auto-fix-build.sh
+   \`\`\`
+
+3. **Or view logs directly:**
+   ${runUrl}
+
+### Auto-Generated Debug Command
+
+\`\`\`bash
+# Run this to get formatted logs for Cursor
+gh run view ${context.payload.workflow_run.id} --log-failed
+\`\`\`
+
+---
+This issue was automatically created by the notify-on-failure workflow.`,
+              labels: ['bug', 'build-failure', 'automated']
+            });
+            
+            console.log(`Created issue #${issue.data.number}`);
+      
+      - name: Send Slack Notification (Optional)
+        if: ${{ vars.SLACK_WEBHOOK_URL != '' }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "🚨 Build Failed: ${{ github.event.workflow_run.name }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 Build Failed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n${{ github.event.workflow_run.name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.event.workflow_run.head_branch }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}|View Run>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+

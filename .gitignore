@@ -28,3 +28,9 @@ out/
 .yarn/*
 .idea/
 .vscode/
+.vercel
+.env*.local
+
+# Docker
+docker-compose-prod.yml
+logs/

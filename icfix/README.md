@@ -60,3 +60,29 @@ Join our [Discord server](https://discord.com/invite/medusajs) to meet other com
 - [Twitter](https://twitter.com/medusajs)
 - [LinkedIn](https://www.linkedin.com/company/medusajs)
 - [Medusa Blog](https://medusajs.com/blog/)
+
+## Cloudflare R2 (S3) configuration
+
+Set these environment variables in your deployment (e.g., Docker `.env`, Vercel/host secrets):
+
+```bash
+# R2 API endpoint, e.g. https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+R2_ENDPOINT=
+# R2 region (R2 uses "auto")
+R2_REGION=auto
+# Bucket name
+R2_BUCKET=
+# Access keys (R2 API token credentials)
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+# Public base URL used to construct returned file URLs
+# e.g., https://assets.example.com or https://<ACCOUNT_ID>.r2.cloudflarestorage.com/<BUCKET>
+R2_FILE_URL=
+# Optional path prefix inside the bucket (e.g., uploads/)
+R2_PREFIX=
+```
+
+Notes:
+- Ensure your bucket CORS permits your domains if clients fetch files directly.
+- If serving files via a custom domain/Cloudflare Worker, set `R2_FILE_URL` to that domain.
+# Trigger Vercel build

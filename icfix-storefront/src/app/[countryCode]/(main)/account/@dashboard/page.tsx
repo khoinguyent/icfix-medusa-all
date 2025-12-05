@@ -12,11 +12,15 @@ export const metadata: Metadata = {
 
 export default async function OverviewTemplate() {
   const customer = await retrieveCustomer().catch(() => null)
-  const orders = (await listOrders().catch(() => null)) || null
 
   if (!customer) {
-    notFound()
+    // Don't call notFound() - just return null to prevent rendering
+    // The layout will handle showing the login component
+    return null
   }
+
+  // Only fetch orders if customer is authenticated
+  const orders = (await listOrders().catch(() => null)) || null
 
   return <Overview customer={customer} orders={orders} />
 }

@@ -1,0 +1,36 @@
+{
+  "name": "medusa-plugin-notification-gmail-oauth2",
+  "version": "2.0.0",
+  "description": "Gmail OAuth2 notification plugin for Medusa v2 - sends emails via Gmail API over HTTPS",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "watch": "tsc --watch --noEmit"
+  },
+  "keywords": [
+    "medusa",
+    "plugin",
+    "notification",
+    "gmail",
+    "oauth2",
+    "email"
+  ],
+  "author": "Your Store",
+  "license": "MIT",
+  "dependencies": {
+    "@medusajs/framework": "^2.0.0",
+    "nodemailer": "^6.9.0",
+    "googleapis": "^126.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/nodemailer": "^6.4.14",
+    "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "@medusajs/framework": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

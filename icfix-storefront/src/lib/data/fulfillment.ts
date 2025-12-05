@@ -1,8 +1,9 @@
 "use server"
 
 import { sdk } from "@lib/config"
+import { getAuthHeaders, getCacheOptions } from "@lib/data/cookies"
+import { StoreFreeShippingPrice } from "@types/shipping-option/http"
 import { HttpTypes } from "@medusajs/types"
-import { getAuthHeaders, getCacheOptions } from "./cookies"
 
 export const listCartShippingMethods = async (cartId: string) => {
   const headers = {
@@ -18,11 +19,7 @@ export const listCartShippingMethods = async (cartId: string) => {
       `/store/shipping-options`,
       {
         method: "GET",
-        query: {
-          cart_id: cartId,
-          fields:
-            "+service_zone.fulfllment_set.type,*service_zone.fulfillment_set.location.address",
-        },
+        query: { cart_id: cartId },
         headers,
         next,
         cache: "force-cache",
@@ -34,37 +31,30 @@ export const listCartShippingMethods = async (cartId: string) => {
     })
 }
 
-export const calculatePriceForShippingOption = async (
-  optionId: string,
-  cartId: string,
-  data?: Record<string, unknown>
-) => {
+export const listCartFreeShippingPrices = async (
+  cartId: string
+): Promise<StoreFreeShippingPrice[]> => {
   const headers = {
     ...(await getAuthHeaders()),
   }
 
   const next = {
-    ...(await getCacheOptions("fulfillment")),
-  }
-
-  const body = { cart_id: cartId, data }
-
-  if (data) {
-    body.data = data
+    ...(await getCacheOptions("freeShipping")),
   }
 
   return sdk.client
-    .fetch<{ shipping_option: HttpTypes.StoreCartShippingOption }>(
-      `/store/shipping-options/${optionId}/calculate`,
-      {
-        method: "POST",
-        body,
-        headers,
-        next,
-      }
-    )
-    .then(({ shipping_option }) => shipping_option)
-    .catch((e) => {
-      return null
+    .fetch<{
+      prices: StoreFreeShippingPrice[]
+    }>(`/store/free-shipping/prices`, {
+      method: "GET",
+      query: { cart_id: cartId },
+      headers,
+      next,
+      cache: "force-cache",
+    })
+    .then((data) => data.prices)
+    .catch((error) => {
+      console.warn("Could not fetch free shipping prices:", error)
+      return []
     })
 }

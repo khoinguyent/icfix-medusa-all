@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Shipped</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 40px 30px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300;">📦 Your Order Has Shipped!</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Great news - your order is on its way!</p>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+            <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px;">Hello {{customerName}}!</h2>
+            
+            <p style="color: #666666; line-height: 1.6; margin: 0 0 25px 0; font-size: 16px;">
+                Great news! Your order has been shipped and is on its way to you. 
+                You can track your package using the information below.
+            </p>
+
+            <!-- Shipping Details Box -->
+            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0; border-left: 4px solid #28a745;">
+                <h3 style="color: #333333; margin: 0 0 20px 0; font-size: 18px;">🚚 Shipping Information</h3>
+                
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #666666; font-weight: 500; display: block; margin-bottom: 5px;">Order Number:</span>
+                    <span style="color: #333333; font-weight: 600; font-size: 18px;">#{{orderId}}</span>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #666666; font-weight: 500; display: block; margin-bottom: 5px;">Tracking Number:</span>
+                    <span style="color: #333333; font-weight: 600; font-size: 16px; font-family: monospace;">{{trackingNumber}}</span>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #666666; font-weight: 500; display: block; margin-bottom: 5px;">Shipping Carrier:</span>
+                    <span style="color: #333333; font-weight: 600;">{{carrier}}</span>
+                </div>
+            </div>
+
+            <!-- Tracking Info -->
+            <div style="background-color: #e7f3ff; border-radius: 8px; padding: 20px; margin: 25px 0; border: 1px solid #b8daff;">
+                <h4 style="color: #0066cc; margin: 0 0 10px 0; font-size: 16px;">📱 Track Your Package</h4>
+                <p style="color: #666666; margin: 0; font-size: 14px; line-height: 1.5;">
+                    You can track your package using the tracking number above on the carrier's website. 
+                    Delivery typically takes 3-5 business days.
+                </p>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{orderUrl}}" style="background-color: #28a745; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">
+                    View Order Details
+                </a>
+            </div>
+
+            <p style="color: #666666; line-height: 1.6; margin: 25px 0 0 0; font-size: 14px;">
+                If you have any questions about your shipment or need assistance, please contact our support team.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+            <p style="color: #666666; margin: 0 0 10px 0; font-size: 14px;">
+                <strong>Your Store</strong><br>
+                Making your shopping experience amazing
+            </p>
+            <p style="color: #999999; margin: 0; font-size: 12px;">
+                This email was sent to you because your order has been shipped.<br>
+                <a href="{{storeUrl}}" style="color: #28a745; text-decoration: none;">Visit our store</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

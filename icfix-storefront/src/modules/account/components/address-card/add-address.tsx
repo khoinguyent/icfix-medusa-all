@@ -1,29 +1,22 @@
 "use client"
 
-import { Plus } from "@medusajs/icons"
-import { Button, Heading } from "@medusajs/ui"
-import { useEffect, useState, useActionState } from "react"
-
+import { addCustomerAddress } from "@lib/data/customer"
 import useToggleState from "@lib/hooks/use-toggle-state"
 import CountrySelect from "@modules/checkout/components/country-select"
+import { SubmitButton } from "@modules/checkout/components/submit-button"
+import Button from "@modules/common/components/button"
 import Input from "@modules/common/components/input"
 import Modal from "@modules/common/components/modal"
-import { SubmitButton } from "@modules/checkout/components/submit-button"
+import { Plus } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { addCustomerAddress } from "@lib/data/customer"
+import { Heading } from "@medusajs/ui"
+import { useActionState, useEffect, useState } from "react"
 
-const AddAddress = ({
-  region,
-  addresses,
-}: {
-  region: HttpTypes.StoreRegion
-  addresses: HttpTypes.StoreCustomerAddress[]
-}) => {
+const AddAddress = ({ region }: { region: HttpTypes.StoreRegion }) => {
   const [successState, setSuccessState] = useState(false)
   const { state, open, close: closeModal } = useToggleState(false)
 
   const [formState, formAction] = useActionState(addCustomerAddress, {
-    isDefaultShipping: addresses.length === 0,
     success: false,
     error: null,
   })

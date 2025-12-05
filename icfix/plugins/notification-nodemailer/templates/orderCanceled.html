@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Cancellation</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%); padding: 40px 30px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 300;">Order Cancellation</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Your order has been canceled</p>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+            <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px;">Hello {{customerName}}!</h2>
+            
+            <p style="color: #666666; line-height: 1.6; margin: 0 0 25px 0; font-size: 16px;">
+                We're writing to confirm that your order has been canceled as requested. 
+                We understand that sometimes plans change, and we're here to help.
+            </p>
+
+            <!-- Cancellation Details Box -->
+            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 25px; margin: 25px 0; border-left: 4px solid #dc3545;">
+                <h3 style="color: #333333; margin: 0 0 20px 0; font-size: 18px;">📋 Cancellation Details</h3>
+                
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #666666; font-weight: 500; display: block; margin-bottom: 5px;">Order Number:</span>
+                    <span style="color: #333333; font-weight: 600; font-size: 18px;">#{{orderId}}</span>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #666666; font-weight: 500; display: block; margin-bottom: 5px;">Cancellation Reason:</span>
+                    <span style="color: #333333; font-weight: 500;">{{reason}}</span>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #666666; font-weight: 500; display: block; margin-bottom: 5px;">Refund Amount:</span>
+                    <span style="color: #28a745; font-weight: 600; font-size: 18px;">{{currency}} {{refundAmount}}</span>
+                </div>
+            </div>
+
+            <!-- Refund Information -->
+            <div style="background-color: #e8f5e8; border-radius: 8px; padding: 20px; margin: 25px 0; border: 1px solid #c3e6c3;">
+                <h4 style="color: #28a745; margin: 0 0 10px 0; font-size: 16px;">💰 Refund Information</h4>
+                <p style="color: #666666; margin: 0; font-size: 14px; line-height: 1.5;">
+                    If you were charged for this order, a refund of <strong>{{currency}} {{refundAmount}}</strong> 
+                    will be processed to your original payment method within 3-5 business days.
+                </p>
+            </div>
+
+            <!-- Next Steps -->
+            <div style="background-color: #fff3cd; border-radius: 8px; padding: 20px; margin: 25px 0; border: 1px solid #ffeaa7;">
+                <h4 style="color: #856404; margin: 0 0 10px 0; font-size: 16px;">📝 What's Next?</h4>
+                <ul style="color: #666666; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                    <li>You'll receive a refund confirmation email once processed</li>
+                    <li>Check your bank statement for the refund (may take 3-5 business days)</li>
+                    <li>Feel free to browse our store for future purchases</li>
+                </ul>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{storeUrl}}" style="background-color: #667eea; color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">
+                    Continue Shopping
+                </a>
+            </div>
+
+            <p style="color: #666666; line-height: 1.6; margin: 25px 0 0 0; font-size: 14px;">
+                If you have any questions about this cancellation or need assistance, please contact our support team.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
+            <p style="color: #666666; margin: 0 0 10px 0; font-size: 14px;">
+                <strong>Your Store</strong><br>
+                Making your shopping experience amazing
+            </p>
+            <p style="color: #999999; margin: 0; font-size: 12px;">
+                This email was sent to confirm your order cancellation.<br>
+                <a href="{{supportUrl}}" style="color: #dc3545; text-decoration: none;">Contact Support</a> | 
+                <a href="{{storeUrl}}" style="color: #667eea; text-decoration: none;">Visit Store</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

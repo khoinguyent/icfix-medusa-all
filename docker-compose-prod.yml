@@ -1,0 +1,149 @@
+version: "3.9"
+
+services:
+  # 1. PostgreSQL Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: icfix-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - icfix-pgdata:/var/lib/postgresql/data
+    networks: [icfix-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # 2. Redis Cache Service
+  redis:
+    image: redis:7-alpine
+    container_name: icfix-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    networks: [icfix-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # 3. MeiliSearch Service
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: icfix-meilisearch
+    restart: unless-stopped
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_API_KEY:-masterKey}
+      MEILI_ENV: ${MEILISEARCH_ENV:-production}
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilisearch_data:/meili_data
+    networks: [icfix-net]
+    # ✅ Use the correct /health endpoint for Docker healthcheck
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:7700/health | grep 'available' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # 4. Medusa Backend Service
+  medusa-backend:
+    # Docker image from GitHub Container Registry (GHCR)
+    # Available tags:
+    #   :latest           - Latest build from main branch (recommended for production)
+    #   :main             - Latest main branch build
+    #   :sha-abc1234      - Specific commit SHA (for rollback/pinning)
+    #   :main-abc1234     - Branch + commit SHA
+    # Gmail integration - application loader registration
+    image: ghcr.io/khoinguyent/icfix-medusa-all:sha-202a491
+    container_name: icfix-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_started
+    # Expose the port only to the internal Docker network for Nginx to access
+    environment:
+      MEDUSA_ADMIN_DISABLE: 'true'
+      NODE_ENV: ${NODE_ENV}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      
+      # MeiliSearch configuration
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY:-masterKey}
+      
+      # JWT and CORS configuration
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      STORE_CORS: ${STORE_CORS}
+      ADMIN_CORS: ${ADMIN_CORS}
+      AUTH_CORS: ${AUTH_CORS}
+      
+      # File storage (R2) - optional
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_REGION: ${R2_REGION:-auto}
+      R2_BUCKET: ${R2_BUCKET}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_FILE_URL: ${R2_FILE_URL}
+      R2_PREFIX: ${R2_PREFIX:-}
+      
+      # Webhook revalidation for storefront cache
+      REVALIDATE_ENDPOINT: ${REVALIDATE_ENDPOINT}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+    expose:
+      - "9000"
+    networks: [icfix-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # 5. Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: icfix-nginx
+    restart: unless-stopped
+    depends_on:
+      medusa-backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/www:/var/www/certbot
+      - ./letsencrypt:/etc/letsencrypt
+    networks: [icfix-net]
+
+  # 6. Certbot for SSL Certificates
+  certbot:
+    image: certbot/certbot
+    container_name: icfix-certbot
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # Keep the container running to perform certificate renewals
+    entrypoint: ["sh", "-c", "sleep infinity"]
+    networks: [icfix-net]
+
+volumes:
+  icfix-pgdata:
+  meilisearch_data:
+
+networks:
+  icfix-net:
+    driver: bridge

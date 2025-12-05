@@ -1,13 +1,23 @@
 "use server"
 
 import { sdk } from "@lib/config"
+import { getAuthHeaders, getCacheOptions } from "@lib/data/cookies"
 import medusaError from "@lib/util/medusa-error"
-import { getAuthHeaders, getCacheOptions } from "./cookies"
 import { HttpTypes } from "@medusajs/types"
 
 export const retrieveOrder = async (id: string) => {
   const headers = {
     ...(await getAuthHeaders()),
+  } as Record<string, string>
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  }
+
+  // If no authentication headers, return null (user not logged in)
+  if (!headers.authorization) {
+    return null
   }
 
   const next = {
@@ -19,14 +29,17 @@ export const retrieveOrder = async (id: string) => {
       method: "GET",
       query: {
         fields:
-          "*payment_collections.payments,*items,*items.metadata,*items.variant,*items.product",
+          "*payment_collections.payments,*items,+items.metadata,*items.variant,*items.product",
       },
       headers,
       next,
       cache: "force-cache",
     })
     .then(({ order }) => order)
-    .catch((err) => medusaError(err))
+    .catch((err) => {
+      console.warn("Could not fetch order:", err)
+      return null
+    })
 }
 
 export const listOrders = async (
@@ -36,6 +49,16 @@ export const listOrders = async (
 ) => {
   const headers = {
     ...(await getAuthHeaders()),
+  } as Record<string, string>
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  }
+
+  // If no authentication headers, return null (user not logged in)
+  if (!headers.authorization) {
+    return null
   }
 
   const next = {
@@ -49,7 +72,8 @@ export const listOrders = async (
         limit,
         offset,
         order: "-created_at",
-        fields: "*items,+items.metadata,*items.variant,*items.product",
+        fields:
+          "*items,+items.metadata,*items.variant,*items.product,*customer",
         ...filters,
       },
       headers,
@@ -57,56 +81,8 @@ export const listOrders = async (
       cache: "force-cache",
     })
     .then(({ orders }) => orders)
-    .catch((err) => medusaError(err))
-}
-
-export const createTransferRequest = async (
-  state: {
-    success: boolean
-    error: string | null
-    order: HttpTypes.StoreOrder | null
-  },
-  formData: FormData
-): Promise<{
-  success: boolean
-  error: string | null
-  order: HttpTypes.StoreOrder | null
-}> => {
-  const id = formData.get("order_id") as string
-
-  if (!id) {
-    return { success: false, error: "Order ID is required", order: null }
-  }
-
-  const headers = await getAuthHeaders()
-
-  return await sdk.store.order
-    .requestTransfer(
-      id,
-      {},
-      {
-        fields: "id, email",
-      },
-      headers
-    )
-    .then(({ order }) => ({ success: true, error: null, order }))
-    .catch((err) => ({ success: false, error: err.message, order: null }))
-}
-
-export const acceptTransferRequest = async (id: string, token: string) => {
-  const headers = await getAuthHeaders()
-
-  return await sdk.store.order
-    .acceptTransfer(id, { token }, {}, headers)
-    .then(({ order }) => ({ success: true, error: null, order }))
-    .catch((err) => ({ success: false, error: err.message, order: null }))
-}
-
-export const declineTransferRequest = async (id: string, token: string) => {
-  const headers = await getAuthHeaders()
-
-  return await sdk.store.order
-    .declineTransfer(id, { token }, {}, headers)
-    .then(({ order }) => ({ success: true, error: null, order }))
-    .catch((err) => ({ success: false, error: err.message, order: null }))
+    .catch((err) => {
+      console.warn("Could not fetch orders:", err)
+      return null
+    })
 }

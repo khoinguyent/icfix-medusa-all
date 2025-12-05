@@ -7,6 +7,9 @@ import { StoreRegion } from "@medusajs/types"
 import CategoryTemplate from "@modules/categories/templates"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 type Props = {
   params: Promise<{ category: string[]; countryCode: string }>
   searchParams: Promise<{
@@ -16,36 +19,45 @@ type Props = {
 }
 
 export async function generateStaticParams() {
-  const product_categories = await listCategories()
+  try {
+    const product_categories = await listCategories()
 
-  if (!product_categories) {
+    if (!product_categories || product_categories.length === 0) {
+      return []
+    }
+
+    const countryCodes = await listRegions().then((regions: StoreRegion[]) =>
+      regions?.map((r) => r.countries?.map((c) => c.iso_2)).flat()
+    )
+
+    const categoryHandles = product_categories.map(
+      (category: any) => category.handle
+    )
+
+    const staticParams = countryCodes
+      ?.map((countryCode: string | undefined) =>
+        categoryHandles.map((handle: any) => ({
+          countryCode,
+          category: [handle],
+        }))
+      )
+      .flat()
+
+    return staticParams || []
+  } catch (e) {
+    console.warn("generateStaticParams categories failed, returning []:", e)
     return []
   }
-
-  const countryCodes = await listRegions().then((regions: StoreRegion[]) =>
-    regions?.map((r) => r.countries?.map((c) => c.iso_2)).flat()
-  )
-
-  const categoryHandles = product_categories.map(
-    (category: any) => category.handle
-  )
-
-  const staticParams = countryCodes
-    ?.map((countryCode: string | undefined) =>
-      categoryHandles.map((handle: any) => ({
-        countryCode,
-        category: [handle],
-      }))
-    )
-    .flat()
-
-  return staticParams
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params
   try {
     const productCategory = await getCategoryByHandle(params.category)
+
+    if (!productCategory) {
+      return {}
+    }
 
     const title = productCategory.name + " | Medusa Store"
 
@@ -59,7 +71,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
       },
     }
   } catch (error) {
-    notFound()
+    return {}
   }
 }
 
@@ -76,7 +88,8 @@ export default async function CategoryPage(props: Props) {
 
   return (
     <CategoryTemplate
-      category={productCategory}
+      categories={await listCategories()}
+      currentCategory={productCategory}
       sortBy={sortBy}
       page={page}
       countryCode={params.countryCode}

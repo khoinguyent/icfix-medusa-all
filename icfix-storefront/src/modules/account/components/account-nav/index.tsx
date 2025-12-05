@@ -1,27 +1,27 @@
 "use client"
 
-import { clx } from "@medusajs/ui"
-import { ArrowRightOnRectangle } from "@medusajs/icons"
-import { useParams, usePathname } from "next/navigation"
-
+import { signout } from "@lib/data/customer"
+import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import ChevronDown from "@modules/common/icons/chevron-down"
-import User from "@modules/common/icons/user"
 import MapPin from "@modules/common/icons/map-pin"
 import Package from "@modules/common/icons/package"
-import LocalizedClientLink from "@modules/common/components/localized-client-link"
-import { HttpTypes } from "@medusajs/types"
-import { signout } from "@lib/data/customer"
+import User from "@modules/common/icons/user"
+import { B2BCustomer } from "@types/global"
+import { ArrowRightOnRectangle } from "@medusajs/icons"
+import { clx } from "@medusajs/ui"
+import { useParams, usePathname } from "next/navigation"
 
 const AccountNav = ({
   customer,
 }: {
-  customer: HttpTypes.StoreCustomer | null
+  customer: B2BCustomer | null
 }) => {
   const route = usePathname()
+
   const { countryCode } = useParams() as { countryCode: string }
 
   const handleLogout = async () => {
-    await signout(countryCode)
+    await signout(countryCode, customer?.id as string)
   }
 
   return (
@@ -108,59 +108,54 @@ const AccountNav = ({
         )}
       </div>
       <div className="hidden small:block" data-testid="account-nav">
-        <div>
-          <div className="pb-4">
-            <h3 className="text-base-semi">Account</h3>
-          </div>
-          <div className="text-base-regular">
-            <ul className="flex mb-0 justify-start items-start flex-col gap-y-4">
-              <li>
-                <AccountNavLink
-                  href="/account"
-                  route={route!}
-                  data-testid="overview-link"
-                >
-                  Overview
-                </AccountNavLink>
-              </li>
-              <li>
-                <AccountNavLink
-                  href="/account/profile"
-                  route={route!}
-                  data-testid="profile-link"
-                >
-                  Profile
-                </AccountNavLink>
-              </li>
-              <li>
-                <AccountNavLink
-                  href="/account/addresses"
-                  route={route!}
-                  data-testid="addresses-link"
-                >
-                  Addresses
-                </AccountNavLink>
-              </li>
-              <li>
-                <AccountNavLink
-                  href="/account/orders"
-                  route={route!}
-                  data-testid="orders-link"
-                >
-                  Orders
-                </AccountNavLink>
-              </li>
-              <li className="text-grey-700">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  data-testid="logout-button"
-                >
-                  Log out
-                </button>
-              </li>
-            </ul>
-          </div>
+        <div className="text-lg">
+          <ul className="flex mb-0 justify-start items-start flex-col gap-y-4">
+            <li>
+              <AccountNavLink
+                href="/account"
+                route={route!}
+                data-testid="overview-link"
+              >
+                Overview
+              </AccountNavLink>
+            </li>
+            <li>
+              <AccountNavLink
+                href="/account/profile"
+                route={route!}
+                data-testid="profile-link"
+              >
+                Profile
+              </AccountNavLink>
+            </li>
+            <li>
+              <AccountNavLink
+                href="/account/addresses"
+                route={route!}
+                data-testid="addresses-link"
+              >
+                Addresses
+              </AccountNavLink>
+            </li>
+            <li>
+              <AccountNavLink
+                href="/account/orders"
+                route={route!}
+                data-testid="orders-link"
+              >
+                Orders
+              </AccountNavLink>
+            </li>
+            <li className="text-neutral-400 hover:text-neutral-950">
+              <button
+                type="button"
+                onClick={handleLogout}
+                data-testid="logout-button"
+              >
+                Log out
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
@@ -186,9 +181,12 @@ const AccountNavLink = ({
   return (
     <LocalizedClientLink
       href={href}
-      className={clx("text-ui-fg-subtle hover:text-ui-fg-base", {
-        "text-ui-fg-base font-semibold": active,
-      })}
+      className={clx(
+        "text-neutral-400 hover:text-neutral-950 flex items-center gap-x-2",
+        {
+          "text-neutral-950": active,
+        }
+      )}
       data-testid={dataTestId}
     >
       {children}

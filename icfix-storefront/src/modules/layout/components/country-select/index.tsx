@@ -1,12 +1,6 @@
 "use client"
 
-import {
-  Listbox,
-  ListboxButton,
-  ListboxOption,
-  ListboxOptions,
-  Transition,
-} from "@headlessui/react"
+import { Listbox, Transition } from "@headlessui/react"
 import { Fragment, useEffect, useMemo, useState } from "react"
 import ReactCountryFlag from "react-country-flag"
 
@@ -73,12 +67,11 @@ const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
             : undefined
         }
       >
-        <ListboxButton className="py-1 w-full">
+        <Listbox.Button className="py-1 w-full">
           <div className="txt-compact-small flex items-start gap-x-2">
             <span>Shipping to:</span>
             {current && (
               <span className="txt-compact-small flex items-center gap-x-2">
-                {/* @ts-ignore */}
                 <ReactCountryFlag
                   svg
                   style={{
@@ -91,7 +84,7 @@ const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
               </span>
             )}
           </div>
-        </ListboxButton>
+        </Listbox.Button>
         <div className="flex relative w-full min-w-[320px]">
           <Transition
             show={state}
@@ -100,18 +93,17 @@ const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <ListboxOptions
+            <Listbox.Options
               className="absolute -bottom-[calc(100%-36px)] left-0 xsmall:left-auto xsmall:right-0 max-h-[442px] overflow-y-scroll z-[900] bg-white drop-shadow-md text-small-regular uppercase text-black no-scrollbar rounded-rounded w-full"
               static
             >
               {options?.map((o, index) => {
                 return (
-                  <ListboxOption
+                  <Listbox.Option
                     key={index}
                     value={o}
                     className="py-2 hover:bg-gray-200 px-3 cursor-pointer flex items-center gap-x-2"
                   >
-                    {/* @ts-ignore */}
                     <ReactCountryFlag
                       svg
                       style={{
@@ -121,10 +113,10 @@ const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
                       countryCode={o?.country ?? ""}
                     />{" "}
                     {o?.label}
-                  </ListboxOption>
+                  </Listbox.Option>
                 )
               })}
-            </ListboxOptions>
+            </Listbox.Options>
           </Transition>
         </div>
       </Listbox>

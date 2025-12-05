@@ -5,7 +5,7 @@ import medusaError from "@lib/util/medusa-error"
 import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
 
-export const listRegions = async () => {
+export const listRegions = async (): Promise<HttpTypes.StoreRegion[]> => {
   const next = {
     ...(await getCacheOptions("regions")),
   }
@@ -16,11 +16,13 @@ export const listRegions = async () => {
       next,
       cache: "force-cache",
     })
-    .then(({ regions }) => regions)
+    .then(({ regions }: { regions: HttpTypes.StoreRegion[] }) => regions)
     .catch(medusaError)
 }
 
-export const retrieveRegion = async (id: string) => {
+export const retrieveRegion = async (
+  id: string
+): Promise<HttpTypes.StoreRegion> => {
   const next = {
     ...(await getCacheOptions(["regions", id].join("-"))),
   }
@@ -31,16 +33,18 @@ export const retrieveRegion = async (id: string) => {
       next,
       cache: "force-cache",
     })
-    .then(({ region }) => region)
+    .then(({ region }: { region: HttpTypes.StoreRegion }) => region)
     .catch(medusaError)
 }
 
 const regionMap = new Map<string, HttpTypes.StoreRegion>()
 
-export const getRegion = async (countryCode: string) => {
+export const getRegion = async (
+  countryCode: string
+): Promise<HttpTypes.StoreRegion | null> => {
   try {
     if (regionMap.has(countryCode)) {
-      return regionMap.get(countryCode)
+      return regionMap.get(countryCode) ?? null
     }
 
     const regions = await listRegions()
@@ -57,9 +61,9 @@ export const getRegion = async (countryCode: string) => {
 
     const region = countryCode
       ? regionMap.get(countryCode)
-      : regionMap.get("us")
+      : regionMap.values().next().value ?? null
 
-    return region
+    return region ?? null
   } catch (e: any) {
     return null
   }
