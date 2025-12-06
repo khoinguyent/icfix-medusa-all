@@ -7,8 +7,17 @@ import { getCacheOptions } from "./cookies"
 export const listCategories = async (
   query?: Record<string, any>
 ): Promise<HttpTypes.StoreProductCategory[]> => {
+  const dynamicCacheOptions = await getCacheOptions("categories")
+  
+  // Combine dynamic cache tags (from cookies) with static tag (for webhook revalidation)
+  // Static tag allows webhooks to invalidate cache without needing cookies
+  const dynamicTags = (dynamicCacheOptions && "tags" in dynamicCacheOptions) 
+    ? dynamicCacheOptions.tags 
+    : []
+  const cacheTags = [...dynamicTags, "categories"]
+
   const next = {
-    ...(await getCacheOptions("categories")),
+    tags: cacheTags,
   }
 
   const limit = query?.limit || 100
@@ -24,7 +33,6 @@ export const listCategories = async (
         ...query,
       },
       next,
-      cache: "force-cache",
     })
 
     return product_categories
@@ -39,8 +47,17 @@ export const getCategoryByHandle = async (
 ): Promise<HttpTypes.StoreProductCategory | null> => {
   const handle = `${categoryHandle.join("/")}`
 
+  const dynamicCacheOptions = await getCacheOptions("categories")
+  
+  // Combine dynamic cache tags (from cookies) with static tag (for webhook revalidation)
+  // Static tag allows webhooks to invalidate cache without needing cookies
+  const dynamicTags = (dynamicCacheOptions && "tags" in dynamicCacheOptions) 
+    ? dynamicCacheOptions.tags 
+    : []
+  const cacheTags = [...dynamicTags, "categories", `category:${handle}`]
+
   const next = {
-    ...(await getCacheOptions("categories")),
+    tags: cacheTags,
   }
 
   try {
@@ -53,7 +70,6 @@ export const getCategoryByHandle = async (
             handle,
           },
           next,
-          cache: "force-cache",
         }
       )
 

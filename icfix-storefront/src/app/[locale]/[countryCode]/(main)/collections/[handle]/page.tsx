@@ -39,13 +39,20 @@ export async function generateStaticParams() {
       (collection: StoreCollection) => collection.handle
     )
 
-    const staticParams = countryCodes
-      ?.map((countryCode: string) =>
-        collectionHandles.map((handle: string | undefined) => ({
-          countryCode,
-          handle,
-        }))
+    const { locales } = await import("@/i18n/config");
+    
+    // Return combinations of locale, countryCode, and handle
+    const staticParams = locales
+      .flatMap((locale) =>
+        countryCodes?.map((countryCode: string) =>
+          collectionHandles.map((handle: string | undefined) => ({
+            locale,
+            countryCode,
+            handle,
+          }))
+        )
       )
+      .flat()
       .flat()
 
     return staticParams || []

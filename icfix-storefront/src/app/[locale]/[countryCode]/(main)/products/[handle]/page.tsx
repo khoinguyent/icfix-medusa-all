@@ -15,6 +15,7 @@ type Props = {
 
 export async function generateStaticParams() {
   try {
+    const { locales } = await import("@/i18n/config");
     const countryCodes = await listRegions().then((regions) =>
       regions?.map((r) => r.countries?.map((c) => c.iso_2)).flat()
     )
@@ -28,13 +29,18 @@ export async function generateStaticParams() {
       { next: { tags: ["products"] }, ...(await getAuthHeaders()) }
     )
 
-    return countryCodes
-      .map((countryCode) =>
-        products.map((product) => ({
-          countryCode,
-          handle: product.handle,
-        }))
+    // Return combinations of locale, countryCode, and handle
+    return locales
+      .flatMap((locale) =>
+        countryCodes.map((countryCode) =>
+          products.map((product) => ({
+            locale,
+            countryCode,
+            handle: product.handle,
+          }))
+        )
       )
+      .flat()
       .flat()
       .filter((param) => param.handle)
   } catch (error) {

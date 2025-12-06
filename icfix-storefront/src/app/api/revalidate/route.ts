@@ -16,48 +16,120 @@ export async function POST(request: NextRequest) {
     
     // If event is "manual" or "force", revalidate all caches
     if (event === "manual" || event === "force") {
+      // Revalidate static tags (works for webhooks without cookies)
       revalidateTag("collections")
       revalidateTag("products") 
       revalidateTag("categories")
-      revalidateTag(`collections-${cacheId}`)
-      revalidateTag(`products-${cacheId}`)
-      revalidateTag(`categories-${cacheId}`)
-      // Also revalidate paths to ensure pages are regenerated
+      
+      // Also revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`collections-${cacheId}`)
+        revalidateTag(`products-${cacheId}`)
+        revalidateTag(`categories-${cacheId}`)
+      }
+      
+      // Revalidate paths to ensure pages are regenerated
       revalidatePath("/store", "page")
       revalidatePath("/", "page")
+      revalidatePath("/", "layout")
+      
       return NextResponse.json({ revalidated: true, now: Date.now(), cacheId, event: "manual" })
     }
     
     if (event === "product.created" || event === "product.updated" || event === "product.deleted") {
       const productId = body.id
-      if (productId) {
-        // Revalidate specific product cache
-        revalidateTag(`product-${cacheId}`)
-        revalidateTag(`product:${productId}-${cacheId}`)
+      const productHandle = body.handle
+      
+      // Revalidate static tag (works for webhooks without cookies)
+      revalidateTag("products")
+      
+      // Revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`products-${cacheId}`)
+        if (productId) {
+          revalidateTag(`product-${cacheId}`)
+          revalidateTag(`product:${productId}-${cacheId}`)
+        }
       }
-      // Also revalidate general products cache
-      revalidateTag(`products-${cacheId}`)
+      
+      // Revalidate product handle if provided
+      if (productHandle) {
+        revalidateTag(`product:${productHandle}`)
+      }
+      
+      // Revalidate paths to ensure pages are regenerated
+      revalidatePath("/store", "page")
+      revalidatePath("/", "page")
+      
+      // Revalidate specific product page if handle is available
+      if (productHandle) {
+        revalidatePath(`/products/${productHandle}`, "page")
+      }
     }
 
     if (event === "product-variant.created" || event === "product-variant.updated" || event === "product-variant.deleted") {
-      // Revalidate products cache when variants change
-      revalidateTag(`products-${cacheId}`)
+      // Revalidate static products cache (works for webhooks without cookies)
+      revalidateTag("products")
+      
+      // Also revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`products-${cacheId}`)
+      }
+      
+      // Revalidate paths
+      revalidatePath("/store", "page")
     }
 
     if (event === "product-collection.created" || event === "product-collection.updated" || event === "product-collection.deleted") {
-      // Revalidate collections cache with dynamic tag
-      revalidateTag(`collections-${cacheId}`)
-      // Also try static tag as fallback
+      // Revalidate static collections cache (works for webhooks without cookies)
       revalidateTag("collections")
+      
+      // Also revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`collections-${cacheId}`)
+      }
+      
+      // Revalidate collection handle or ID if provided
+      if (body.handle) {
+        revalidateTag(`collection:${body.handle}`)
+      }
+      if (body.id) {
+        revalidateTag(`collection:${body.id}`)
+      }
+      
+      // Revalidate paths
+      revalidatePath("/store", "page")
+      revalidatePath("/", "page")
+      
+      // Revalidate collection pages
+      if (body.handle) {
+        revalidatePath(`/collections/${body.handle}`, "page")
+      }
     }
 
     if (event === "product-category.created" || event === "product-category.updated" || event === "product-category.deleted") {
-      // Revalidate categories cache
-      revalidateTag(`categories-${cacheId}`)
-      // Also try static tag as fallback
+      // Revalidate categories cache - use static tag for webhook compatibility
+      // Static tag works regardless of cacheId cookies
       revalidateTag("categories")
-      // Revalidate store page to ensure category list updates
+      
+      // Also revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`categories-${cacheId}`)
+      }
+      
+      // Revalidate category handle if provided
+      if (body.handle) {
+        revalidateTag(`category:${body.handle}`)
+      }
+      
+      // Revalidate all paths that display categories
       revalidatePath("/store", "page")
+      revalidatePath("/", "page")
+      
+      // Revalidate category pages
+      if (body.handle) {
+        revalidatePath(`/categories/${body.handle}`, "page")
+      }
     }
 
     return NextResponse.json({ revalidated: true, now: Date.now(), cacheId })

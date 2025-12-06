@@ -22,9 +22,9 @@ ENV NEXT_PUBLIC_MEDUSA_BACKEND_URL=$NEXT_PUBLIC_MEDUSA_BACKEND_URL
 ENV NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=$NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 ENV NEXT_PUBLIC_DEFAULT_REGION=$NEXT_PUBLIC_DEFAULT_REGION
 
-# Copy .env.local after setting ENV vars so build args take precedence
-# This ensures docker-compose build args override any local .env.local file
-COPY .env.local* ./
+# Remove .env.local files before build to ensure build args take precedence
+# Next.js reads .env.local with higher priority than ENV vars
+RUN rm -f .env.local .env.local.* 2>/dev/null || true
 
 RUN yarn build
 

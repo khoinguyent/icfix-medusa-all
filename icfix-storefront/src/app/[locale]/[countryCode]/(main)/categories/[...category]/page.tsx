@@ -34,13 +34,20 @@ export async function generateStaticParams() {
       (category: any) => category.handle
     )
 
-    const staticParams = countryCodes
-      ?.map((countryCode: string | undefined) =>
-        categoryHandles.map((handle: any) => ({
-          countryCode,
-          category: [handle],
-        }))
+    const { locales } = await import("@/i18n/config");
+    
+    // Return combinations of locale, countryCode, and category
+    const staticParams = locales
+      .flatMap((locale) =>
+        countryCodes?.map((countryCode: string | undefined) =>
+          categoryHandles.map((handle: any) => ({
+            locale,
+            countryCode,
+            category: [handle],
+          }))
+        )
       )
+      .flat()
       .flat()
 
     return staticParams || []

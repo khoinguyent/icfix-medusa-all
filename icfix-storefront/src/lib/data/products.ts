@@ -18,8 +18,16 @@ export const getProductsById = async ({
     ...(await getAuthHeaders()),
   }
 
+  const dynamicCacheOptions = await getCacheOptions("products")
+  
+  // Combine dynamic cache tags (from cookies) with static tag (for webhook revalidation)
+  const dynamicTags = (dynamicCacheOptions && "tags" in dynamicCacheOptions) 
+    ? dynamicCacheOptions.tags 
+    : []
+  const cacheTags = [...dynamicTags, "products"]
+
   const next = {
-    ...(await getCacheOptions("products")),
+    tags: cacheTags,
   }
 
   return sdk.client
@@ -34,7 +42,6 @@ export const getProductsById = async ({
       },
       headers,
       next,
-      cache: "force-cache",
     })
     .then(({ products }) => products)
 }
@@ -44,8 +51,16 @@ export const getProductByHandle = async (handle: string, regionId: string) => {
     ...(await getAuthHeaders()),
   }
 
+  const dynamicCacheOptions = await getCacheOptions("products")
+  
+  // Combine dynamic cache tags (from cookies) with static tag (for webhook revalidation)
+  const dynamicTags = (dynamicCacheOptions && "tags" in dynamicCacheOptions) 
+    ? dynamicCacheOptions.tags 
+    : []
+  const cacheTags = [...dynamicTags, "products", `product:${handle}`]
+
   const next = {
-    ...(await getCacheOptions("products")),
+    tags: cacheTags,
   }
 
   return sdk.client
@@ -60,7 +75,6 @@ export const getProductByHandle = async (handle: string, regionId: string) => {
       },
       headers,
       next,
-      cache: "force-cache",
     })
     .then(({ products }) => products[0])
 }
@@ -94,8 +108,16 @@ export const listProducts = async ({
     ...(await getAuthHeaders()),
   }
 
+  const dynamicCacheOptions = await getCacheOptions("products")
+  
+  // Combine dynamic cache tags (from cookies) with static tag (for webhook revalidation)
+  const dynamicTags = (dynamicCacheOptions && "tags" in dynamicCacheOptions) 
+    ? dynamicCacheOptions.tags 
+    : []
+  const cacheTags = [...dynamicTags, "products"]
+
   const next = {
-    ...(await getCacheOptions("products")),
+    tags: cacheTags,
   }
 
   return sdk.client
@@ -113,7 +135,6 @@ export const listProducts = async ({
         },
         headers,
         next,
-        cache: "force-cache",
       }
     )
     .then(({ products, count }) => {

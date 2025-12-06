@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 
 export async function generateStaticParams() {
   try {
+    const { locales } = await import("@/i18n/config");
     const countryCodes = await listRegions().then(
       (regions) =>
         regions
@@ -23,10 +24,17 @@ export async function generateStaticParams() {
           .flat()
           .filter(Boolean) as string[]
     )
-    return countryCodes.map((countryCode) => ({ countryCode }))
+    // Return combinations of locale and countryCode
+    return locales.flatMap((locale) =>
+      countryCodes.map((countryCode) => ({ locale, countryCode }))
+    )
   } catch (error) {
-    console.warn("generateStaticParams for home page failed, returning []:", error)
-    return []
+    console.warn("generateStaticParams for home page failed, returning default:", error)
+    // Return default combinations if regions fetch fails
+    return [
+      { locale: "en", countryCode: "vn" },
+      { locale: "vi", countryCode: "vn" },
+    ]
   }
 }
 

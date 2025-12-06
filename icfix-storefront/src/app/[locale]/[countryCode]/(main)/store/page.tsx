@@ -1,6 +1,7 @@
 export async function generateStaticParams() {
   try {
     const { listRegions } = await import("@lib/data/regions");
+    const { locales } = await import("@/i18n/config");
     const countryCodes = await listRegions().then(
       (regions) =>
         regions
@@ -8,10 +9,17 @@ export async function generateStaticParams() {
           .flat()
           .filter(Boolean) as string[]
     );
-    return countryCodes.map((countryCode) => ({ countryCode }));
+    // Return combinations of locale and countryCode
+    return locales.flatMap((locale) =>
+      countryCodes.map((countryCode) => ({ locale, countryCode }))
+    );
   } catch (error) {
     console.warn("generateStaticParams for store page failed, returning default:", error);
-    return [{ countryCode: "vn" }];
+    // Return default combinations if regions fetch fails
+    return [
+      { locale: "en", countryCode: "vn" },
+      { locale: "vi", countryCode: "vn" },
+    ];
   }
 }
 
