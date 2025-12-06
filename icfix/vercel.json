@@ -2,21 +2,16 @@
   "installCommand": "echo 'Skipping install - using pre-built assets'",
   "buildCommand": "echo 'Skipping build - using pre-built assets from repository'",
   "outputDirectory": "admin",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!app/assets/).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
+      "src": "/assets/(.*)",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
     {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
