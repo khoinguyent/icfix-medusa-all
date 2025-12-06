@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.env.local
+.env*.local
+*.log
+.DS_Store
+.vercel
+dist
+build
+coverage
+.vscode
+.idea
+# Keep .yarn for PnP
+!.yarn
+!.yarnrc.yml
+
