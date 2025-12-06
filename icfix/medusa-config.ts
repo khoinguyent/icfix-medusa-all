@@ -29,26 +29,8 @@ module.exports = defineConfig({
     },
   },
   plugins: [
-    {
-      resolve: "@lambdacurry/medusa-plugin-webhooks",
-      options: {
-        enableUI: true,
-        customSubscriptions: [
-          "product.created",
-          "product.updated",
-          "product.deleted",
-          "product-variant.created",
-          "product-variant.updated",
-          "product-variant.deleted",
-          "product-collection.created",
-          "product-collection.updated",
-          "product-collection.deleted",
-          "product-category.created",
-          "product-category.updated",
-          "product-category.deleted",
-        ],
-      },
-    },
+    // Note: Webhook functionality is now handled by src/subscribers/vercel-revalidate.ts
+    // The @lambdacurry/medusa-plugin-webhooks has been removed due to v1/v2 compatibility issues
   ],
   modules: [
     {
