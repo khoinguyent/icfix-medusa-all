@@ -1,0 +1,57 @@
+#!/usr/bin/expect -f
+
+# Restore Nginx CORS handling (simpler approach)
+# This lets Nginx handle all CORS headers, including OPTIONS preflight
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        
+        send "echo '=== Adding CORS handling to Nginx (handle OPTIONS directly, hide Medusa headers) ==='\r"
+        expect "# "
+        
+        # Add OPTIONS handling BEFORE location block (handle preflight directly)
+        # Then in location block: hide Medusa CORS headers and add Nginx CORS headers
+        send "if grep -q 'location /' nginx/conf.d/medusa.conf; then sed -i '/location / {/i\\    # Handle OPTIONS preflight requests directly (before proxying)\\    if (\\\$request_method = OPTIONS) {\\      add_header Access-Control-Allow-Origin \\\$http_origin always;\\      add_header Access-Control-Allow-Methods \"GET, POST, PUT, PATCH, DELETE, OPTIONS\" always;\\      add_header Access-Control-Allow-Headers \"Content-Type, Authorization, Baggage, Sentry-Trace\" always;\\      add_header Access-Control-Allow-Credentials \"true\" always;\\      add_header Content-Length 0 always;\\      add_header Content-Type text/plain always;\\      return 204;\\    }' nginx/conf.d/medusa.conf && sed -i '/proxy_set_header X-Forwarded-Proto/a\\    # Hide CORS headers from backend (prevent duplicates)\\    proxy_hide_header Access-Control-Allow-Origin;\\    proxy_hide_header Access-Control-Allow-Credentials;\\    proxy_hide_header Access-Control-Allow-Methods;\\    proxy_hide_header Access-Control-Allow-Headers;\\    # Add CORS headers from Nginx (single source of truth)\\    add_header Access-Control-Allow-Origin \\\$http_origin always;\\    add_header Access-Control-Allow-Credentials \"true\" always;' nginx/conf.d/medusa.conf && echo 'CORS handling configured in Nginx'; else echo 'Location block not found'; fi\r"
+        expect "# "
+        
+        # Test Nginx config
+        send "echo '=== Testing Nginx configuration ==='\r"
+        expect "# "
+        send "docker exec icfix-nginx nginx -t 2>&1\r"
+        expect "# "
+        
+        # Reload Nginx
+        send "echo '=== Reloading Nginx ==='\r"
+        expect "# "
+        send "docker exec icfix-nginx nginx -s reload 2>&1\r"
+        expect "# "
+        
+        # Test CORS via external endpoint
+        send "echo '=== Testing CORS preflight (OPTIONS) ==='\r"
+        expect "# "
+        send "sleep 2 && curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' -H 'Access-Control-Request-Method: GET' https://icfix.duckdns.org/admin/feature-flags 2>&1 | head -15\r"
+        expect "# "
+        
+        send "exit\r"
+    }
+}
+
+expect eof
+

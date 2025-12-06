@@ -1,0 +1,90 @@
+#!/usr/bin/expect -f
+
+# Check SSL Certificate and Nginx Configuration for api.icfix.vn
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Checking SSL Certificate & Nginx Config"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+# Check certbot certificates
+puts "=== Certbot Certificates ===\n"
+send "certbot certificates\r"
+expect -re "#|\\$"
+
+# Check nginx configuration for api.icfix.vn
+puts "\n=== Nginx Configuration for api.icfix.vn ===\n"
+send "ls -la /etc/nginx/sites-enabled/ | grep -i api || echo 'No api config found'\r"
+expect -re "#|\\$"
+
+send "cat /etc/nginx/sites-enabled/*api* 2>/dev/null || cat /etc/nginx/conf.d/*api* 2>/dev/null || echo 'No api config file found'\r"
+expect -re "#|\\$"
+
+# Check if certificate files exist
+puts "\n=== SSL Certificate Files ===\n"
+send "ls -la /etc/letsencrypt/live/api.icfix.vn/ 2>/dev/null || echo 'Certificate directory not found'\r"
+expect -re "#|\\$"
+
+# Check certificate details
+puts "\n=== Certificate Details ===\n"
+send "openssl x509 -in /etc/letsencrypt/live/api.icfix.vn/fullchain.pem -text -noout 2>/dev/null | grep -E '(Subject:|DNS:|Issuer:|Not Before|Not After)' || echo 'Cannot read certificate'\r"
+expect -re "#|\\$"
+
+# Check nginx status
+puts "\n=== Nginx Status ===\n"
+send "systemctl status nginx --no-pager | head -10\r"
+expect -re "#|\\$"
+
+# Test nginx config
+puts "\n=== Nginx Config Test ===\n"
+send "nginx -t\r"
+expect -re "#|\\$"
+
+# Check what's listening on port 443
+puts "\n=== Port 443 Listeners ===\n"
+send "netstat -tlnp | grep :443 || ss -tlnp | grep :443\r"
+expect -re "#|\\$"
+
+# Check docker-compose nginx service
+puts "\n=== Docker Nginx Service ===\n"
+send "cd /root/icfix-medusa && docker-compose ps | grep nginx || echo 'No nginx container found'\r"
+expect -re "#|\\$"
+
+puts "\n=========================================\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

@@ -19,25 +19,25 @@ export const PRODUCT_LIMIT = 12
 
 export async function generateStaticParams() {
   try {
-    const { collections } = await listCollections({
-      fields: "*products",
-    })
+  const { collections } = await listCollections({
+    fields: "*products",
+  })
 
-    if (!collections) {
-      return []
-    }
+  if (!collections) {
+    return []
+  }
 
-    const countryCodes = await listRegions().then(
-      (regions: StoreRegion[]) =>
-        regions
-          ?.map((r) => r.countries?.map((c) => c.iso_2))
-          .flat()
-          .filter(Boolean) as string[]
-    )
+  const countryCodes = await listRegions().then(
+    (regions: StoreRegion[]) =>
+      regions
+        ?.map((r) => r.countries?.map((c) => c.iso_2))
+        .flat()
+        .filter(Boolean) as string[]
+  )
 
-    const collectionHandles = collections.map(
-      (collection: StoreCollection) => collection.handle
-    )
+  const collectionHandles = collections.map(
+    (collection: StoreCollection) => collection.handle
+  )
 
     const { locales } = await import("@/i18n/config");
     
@@ -45,15 +45,15 @@ export async function generateStaticParams() {
     const staticParams = locales
       .flatMap((locale) =>
         countryCodes?.map((countryCode: string) =>
-          collectionHandles.map((handle: string | undefined) => ({
+      collectionHandles.map((handle: string | undefined) => ({
             locale,
-            countryCode,
-            handle,
-          }))
-        )
+        countryCode,
+        handle,
+      }))
+    )
       )
       .flat()
-      .flat()
+    .flat()
 
     return staticParams || []
   } catch (error) {

@@ -33,12 +33,12 @@ export async function generateStaticParams() {
     return locales
       .flatMap((locale) =>
         countryCodes.map((countryCode) =>
-          products.map((product) => ({
+        products.map((product) => ({
             locale,
-            countryCode,
-            handle: product.handle,
-          }))
-        )
+          countryCode,
+          handle: product.handle,
+        }))
+      )
       )
       .flat()
       .flat()

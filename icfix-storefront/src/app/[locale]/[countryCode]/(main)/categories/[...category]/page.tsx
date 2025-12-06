@@ -40,12 +40,12 @@ export async function generateStaticParams() {
     const staticParams = locales
       .flatMap((locale) =>
         countryCodes?.map((countryCode: string | undefined) =>
-          categoryHandles.map((handle: any) => ({
+        categoryHandles.map((handle: any) => ({
             locale,
-            countryCode,
-            category: [handle],
-          }))
-        )
+          countryCode,
+          category: [handle],
+        }))
+      )
       )
       .flat()
       .flat()

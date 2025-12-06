@@ -1,0 +1,111 @@
+#!/usr/bin/expect -f
+
+# Fix Duplicate CORS Headers - Remove duplicate Access-Control-Allow-Credentials
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Fixing Duplicate CORS Headers"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Backup config
+puts "=== Backing up configuration ===\n"
+send "cp nginx/conf.d/medusa.conf nginx/conf.d/medusa.conf.backup\r"
+expect -re "#|\\$"
+
+# The issue: Medusa backend is likely also setting CORS headers
+# Solution: Remove duplicate from nginx, or ensure only one source sets it
+# Since Medusa config has CORS settings, we should remove the duplicate from nginx
+
+puts "\n=== Current CORS headers in nginx ===\n"
+send "grep -n 'Access-Control-Allow-Credentials' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+puts "\n=== Fixing: Removing duplicate from main location block ===\n"
+puts "The OPTIONS block needs CORS headers for preflight."
+puts "The main location block should NOT duplicate them if Medusa sets them.\n"
+
+# Remove the duplicate Access-Control-Allow-Credentials from main location block
+# Keep it only in OPTIONS block
+send "sed -i '/# CORS on non-OPTIONS responses/,/add_header Access-Control-Allow-Credentials/d' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Add back only Access-Control-Allow-Origin (without credentials) for non-OPTIONS
+# Actually, let's check what Medusa is setting first
+puts "\n=== Checking if fix was applied ===\n"
+send "grep -A 3 '# CORS on non-OPTIONS' nginx/conf.d/medusa.conf || echo 'Section removed'\r"
+expect -re "#|\\$"
+
+# Better approach: Use more_clear_headers or just remove the duplicate line
+# Let's use a simpler fix - remove the duplicate Access-Control-Allow-Credentials
+send "sed -i '/add_header Access-Control-Allow-Credentials.*always;/d' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Add it back only in OPTIONS block
+send "sed -i '/add_header Access-Control-Allow-Headers.*always;/a\\    add_header Access-Control-Allow-Credentials \"true\" always;' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Actually, let me read the file and do a proper fix
+puts "\n=== Reading current config to understand structure ===\n"
+send "cat nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+puts "\n=== Manual fix needed ==="
+puts "The issue is that both nginx and Medusa are setting CORS headers."
+puts "We need to either:"
+puts "1. Remove CORS headers from nginx (let Medusa handle it)"
+puts "2. Remove CORS headers from Medusa (let nginx handle it)"
+puts "3. Use 'more_clear_headers' module to clear before adding\n"
+
+# Test nginx config
+puts "\n=== Testing nginx configuration ===\n"
+send "docker exec icfix-nginx nginx -t\r"
+expect -re "#|\\$"
+
+# Reload nginx
+puts "\n=== Reloading nginx ===\n"
+send "docker exec icfix-nginx nginx -s reload\r"
+expect -re "#|\\$"
+
+puts "\n=========================================\n"
+puts "If the fix didn't work automatically, we need to manually edit"
+puts "the nginx config to remove duplicate CORS headers.\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

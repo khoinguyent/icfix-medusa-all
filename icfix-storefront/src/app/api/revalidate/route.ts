@@ -23,9 +23,9 @@ export async function POST(request: NextRequest) {
       
       // Also revalidate dynamic tags if cacheId is available
       if (cacheId !== "default") {
-        revalidateTag(`collections-${cacheId}`)
-        revalidateTag(`products-${cacheId}`)
-        revalidateTag(`categories-${cacheId}`)
+      revalidateTag(`collections-${cacheId}`)
+      revalidateTag(`products-${cacheId}`)
+      revalidateTag(`categories-${cacheId}`)
       }
       
       // Revalidate paths to ensure pages are regenerated
@@ -46,10 +46,10 @@ export async function POST(request: NextRequest) {
       // Revalidate dynamic tags if cacheId is available
       if (cacheId !== "default") {
         revalidateTag(`products-${cacheId}`)
-        if (productId) {
-          revalidateTag(`product-${cacheId}`)
-          revalidateTag(`product:${productId}-${cacheId}`)
-        }
+      if (productId) {
+        revalidateTag(`product-${cacheId}`)
+        revalidateTag(`product:${productId}-${cacheId}`)
+      }
       }
       
       // Revalidate product handle if provided
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       
       // Also revalidate dynamic tags if cacheId is available
       if (cacheId !== "default") {
-        revalidateTag(`products-${cacheId}`)
+      revalidateTag(`products-${cacheId}`)
       }
       
       // Revalidate paths

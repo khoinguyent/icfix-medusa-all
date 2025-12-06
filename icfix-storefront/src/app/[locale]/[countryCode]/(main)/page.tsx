@@ -17,13 +17,13 @@ export const metadata: Metadata = {
 export async function generateStaticParams() {
   try {
     const { locales } = await import("@/i18n/config");
-    const countryCodes = await listRegions().then(
-      (regions) =>
-        regions
-          ?.map((r) => r.countries?.map((c) => c.iso_2))
-          .flat()
-          .filter(Boolean) as string[]
-    )
+  const countryCodes = await listRegions().then(
+    (regions) =>
+      regions
+        ?.map((r) => r.countries?.map((c) => c.iso_2))
+        .flat()
+        .filter(Boolean) as string[]
+  )
     // Return combinations of locale and countryCode
     return locales.flatMap((locale) =>
       countryCodes.map((countryCode) => ({ locale, countryCode }))

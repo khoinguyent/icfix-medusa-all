@@ -1,0 +1,83 @@
+#!/usr/bin/expect -f
+
+# Check Nginx SSL Configuration Details
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Nginx SSL Configuration Details"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Check nginx configuration
+puts "=== Nginx Configuration (medusa.conf) ===\n"
+send "docker exec icfix-nginx cat /etc/nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Check certificate files
+puts "\n=== Certificate Files ===\n"
+send "docker exec icfix-nginx ls -la /etc/letsencrypt/live/\r"
+expect -re "#|\\$"
+
+send "docker exec icfix-nginx ls -la /etc/letsencrypt/live/api.icfix.vn/ 2>/dev/null || echo 'api.icfix.vn certificate not found'\r"
+expect -re "#|\\$"
+
+# Check certificate details
+puts "\n=== Certificate Details for api.icfix.vn ===\n"
+send "docker exec icfix-nginx openssl x509 -in /etc/letsencrypt/live/api.icfix.vn/fullchain.pem -text -noout 2>/dev/null | grep -E '(Subject:|DNS:|Issuer:|Not Before|Not After)' || echo 'Cannot read certificate'\r"
+expect -re "#|\\$"
+
+# Check certificate expiration
+puts "\n=== Certificate Expiration ===\n"
+send "docker exec icfix-nginx openssl x509 -in /etc/letsencrypt/live/api.icfix.vn/cert.pem -noout -dates 2>/dev/null || echo 'Cannot read certificate dates'\r"
+expect -re "#|\\$"
+
+# Test SSL connection from inside container
+puts "\n=== SSL Connection Test ===\n"
+send "docker exec icfix-nginx openssl s_client -connect localhost:443 -servername api.icfix.vn </dev/null 2>/dev/null | grep -E '(subject=|issuer=|Verify return code|CN=)' | head -5 || echo 'Cannot test SSL'\r"
+expect -re "#|\\$"
+
+# Check nginx error logs
+puts "\n=== Recent Nginx Error Logs ===\n"
+send "docker exec icfix-nginx tail -20 /var/log/nginx/error.log 2>/dev/null || echo 'No error logs'\r"
+expect -re "#|\\$"
+
+puts "\n=========================================\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

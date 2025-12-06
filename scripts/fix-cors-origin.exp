@@ -1,0 +1,92 @@
+#!/usr/bin/expect -f
+
+# Fix Missing Access-Control-Allow-Origin Header
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Fixing Missing CORS Origin Header"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Check current config
+puts "=== Current CORS configuration ===\n"
+send "grep -A 10 'proxy_cache_bypass' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# The fix: Ensure Access-Control-Allow-Origin is set in main location block
+# But NOT Access-Control-Allow-Credentials (Medusa handles that)
+puts "\n=== Fixing CORS headers ===\n"
+
+# Check if the header exists
+send "grep 'Access-Control-Allow-Origin.*http_origin' nginx/conf.d/medusa.conf | grep -v OPTIONS\r"
+expect -re "#|\\$"
+
+# If it doesn't exist, add it after proxy_cache_bypass
+send "if ! grep -q 'Access-Control-Allow-Origin.*http_origin.*always' nginx/conf.d/medusa.conf || grep -q 'CORS on non-OPTIONS' nginx/conf.d/medusa.conf; then echo 'Header exists or section found'; else echo 'Need to add header'; fi\r"
+expect -re "#|\\$"
+
+# Read the current config around the location block
+puts "\n=== Reading location block ===\n"
+send "sed -n '/proxy_cache_bypass/,/proxy_read_timeout/p' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Add Access-Control-Allow-Origin after proxy_cache_bypass if missing
+send "sed -i '/proxy_cache_bypass.*http_upgrade;/a\\    # CORS: Allow origin (credentials handled by backend)\\    add_header Access-Control-Allow-Origin \\\$http_origin always;' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Verify
+puts "\n=== Verifying fix ===\n"
+send "grep -A 3 'proxy_cache_bypass' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Test nginx config
+puts "\n=== Testing nginx configuration ===\n"
+send "docker exec icfix-nginx nginx -t\r"
+expect -re "#|\\$"
+
+# Reload nginx
+puts "\n=== Reloading nginx ===\n"
+send "docker exec icfix-nginx nginx -s reload\r"
+expect -re "#|\\$"
+
+puts "\n✅ Nginx configuration updated\n"
+puts "Access-Control-Allow-Origin header should now be present.\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

@@ -1,0 +1,64 @@
+#!/usr/bin/expect -f
+
+# Clean up duplicate Access-Control-Allow-Origin headers
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Cleaning Up Duplicate CORS Headers"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Remove the duplicate line (the one with old comment)
+send "sed -i '/# CORS on non-OPTIONS responses (Origin only, credentials from backend).*add_header Access-Control-Allow-Origin/d' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Verify only one remains
+puts "\n=== Verifying CORS headers ===\n"
+send "grep -n 'Access-Control-Allow-Origin.*http_origin' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Test and reload
+puts "\n=== Testing and reloading nginx ===\n"
+send "docker exec icfix-nginx nginx -t && docker exec icfix-nginx nginx -s reload\r"
+expect -re "#|\\$"
+
+puts "\n✅ Duplicate header removed. Only one Access-Control-Allow-Origin remains.\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

@@ -1,0 +1,63 @@
+#!/usr/bin/expect -f
+
+# Load environment variables
+set script_dir [file dirname [file normalize [info script]]]
+source [file join $script_dir load-env.exp]
+
+set timeout 300
+set server_ip $::server_ip
+set server_user $::server_user
+set server_pass $::server_pass
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Pulling latest backend image ==='\r"
+        expect "# "
+        send "docker-compose pull medusa-backend\r"
+        expect {
+            -re "(Pulling|Downloaded|already up to date|Digest:|Status:)" { exp_continue }
+            "# " { }
+        }
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Restarting backend service ==='\r"
+        expect "# "
+        send "docker-compose up -d medusa-backend\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Waiting 15 seconds for startup ==='\r"
+        expect "# "
+        send "sleep 15\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Container Status ==='\r"
+        expect "# "
+        send "docker-compose ps medusa-backend\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Backend Logs (last 40 lines) ==='\r"
+        expect "# "
+        send "docker-compose logs --tail=40 medusa-backend\r"
+        expect "# "
+        send "exit\r"
+    }
+}
+
+expect eof
+

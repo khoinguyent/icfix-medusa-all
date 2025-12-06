@@ -1,0 +1,76 @@
+#!/usr/bin/expect -f
+
+# Fix Duplicate CORS Headers in Nginx Configuration
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Fixing Duplicate CORS Headers"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Check current nginx config
+puts "=== Current Nginx Configuration ===\n"
+send "cat nginx/conf.d/medusa.conf | grep -A 5 -B 5 'Access-Control'\r"
+expect -re "#|\\$"
+
+# Backup config
+puts "\n=== Backing up configuration ===\n"
+send "cp nginx/conf.d/medusa.conf nginx/conf.d/medusa.conf.backup.$(date +%Y%m%d_%H%M%S)\r"
+expect -re "#|\\$"
+
+# Check if CORS headers are duplicated
+puts "\n=== Checking for duplicate CORS headers ===\n"
+send "grep -n 'Access-Control-Allow-Credentials' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+puts "\n=== Fixing duplicate headers ===\n"
+puts "The issue is that CORS headers are being set multiple times."
+puts "We need to ensure each header is only set once.\n"
+
+# Show the problematic section
+send "cat nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+puts "\n=========================================\n"
+puts "Please review the configuration above."
+puts "The fix is to remove duplicate 'add_header' directives."
+puts "\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

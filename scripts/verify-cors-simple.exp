@@ -1,0 +1,63 @@
+#!/usr/bin/expect -f
+
+# Simple CORS Verification
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        
+        # Show .env ADMIN_CORS
+        send "echo '=== ADMIN_CORS in .env ==='\r"
+        expect "# "
+        send "grep '^ADMIN_CORS=' .env\r"
+        expect "# "
+        
+        # Restart backend to ensure it picks up new env
+        send "echo '=== Restarting backend to apply CORS changes ==='\r"
+        expect "# "
+        send "docker-compose restart medusa-backend\r"
+        expect "# "
+        
+        send "sleep 10\r"
+        expect "# "
+        
+        # Check container env after restart
+        send "echo '=== ADMIN_CORS in container (after restart) ==='\r"
+        expect "# "
+        send "docker exec icfix-backend env | grep ADMIN_CORS\r"
+        expect "# "
+        
+        # Test CORS header through external endpoint
+        send "echo '=== Testing CORS via external endpoint ==='\r"
+        expect "# "
+        send "curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' https://icfix.duckdns.org/admin/feature-flags 2>&1 | grep -i 'access-control-allow-origin'\r"
+        expect "# "
+        
+        # Count CORS headers (should be 1)
+        send "echo '=== Counting CORS headers (should be 1) ==='\r"
+        expect "# "
+        send "curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' https://icfix.duckdns.org/admin/feature-flags 2>&1 | grep -ic 'access-control-allow-origin'\r"
+        expect "# "
+        
+        send "exit\r"
+    }
+}
+
+expect eof
+
