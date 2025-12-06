@@ -1,6 +1,6 @@
 {
   "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "echo \"VITE_ADMIN_BACKEND_URL is set to: $VITE_ADMIN_BACKEND_URL\" && VITE_BASE_PATH=/app node node_modules/@medusajs/cli/cli.js build --admin-only && npm run copy-admin",
+  "buildCommand": "echo \"VITE_ADMIN_BACKEND_URL is set to: $VITE_ADMIN_BACKEND_URL\" && echo \"VITE_BASE_PATH is set to: $VITE_BASE_PATH\" && node node_modules/@medusajs/cli/cli.js build --admin-only && npm run copy-admin",
   "outputDirectory": "admin",
   "rewrites": [
     {
