@@ -1,6 +1,6 @@
 {
   "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "echo \"VITE_ADMIN_BACKEND_URL is set to: $VITE_ADMIN_BACKEND_URL\" && npx medusa build --admin-only",
+  "buildCommand": "echo \"VITE_ADMIN_BACKEND_URL is set to: $VITE_ADMIN_BACKEND_URL\" && npm run build:admin",
   "outputDirectory": "admin",
   "rewrites": [
     {
