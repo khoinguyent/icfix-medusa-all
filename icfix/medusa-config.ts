@@ -9,6 +9,7 @@ module.exports = defineConfig({
   },
   admin: {
     disable: true, // Disabled for backend server (admin built separately on Vercel)
+    path: "/", // Admin path for router basename (must match Cloudflare Pages root deployment)
     backendUrl: process.env.VITE_ADMIN_BACKEND_URL || process.env.MEDUSA_BACKEND_URL || "https://icfix.duckdns.org",
     // @ts-ignore
     vite: (config) => {
