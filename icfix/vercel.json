@@ -1,16 +1,4 @@
 {
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/app",
-      "permanent": true
-    }
-  ],
-  "rewrites": [
-    { "source": "/app/(.*)",        "destination": "/$1" },
-    { "source": "/auth/:path*",     "destination": "https://icfix.duckdns.org/auth/:path*" },
-    { "source": "/admin/:path*",    "destination": "https://icfix.duckdns.org/admin/:path*" },
-    { "source": "/store/:path*",    "destination": "https://icfix.duckdns.org/store/:path*" },
-    { "source": "/(.*)",            "destination": "/index.html" }
-  ]
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "echo \"VITE_ADMIN_BACKEND_URL is set to: $VITE_ADMIN_BACKEND_URL\" && npm run build:admin"
 }
