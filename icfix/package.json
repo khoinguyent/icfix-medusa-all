@@ -16,7 +16,7 @@
   "scripts": {
     "build": "medusa build",
     "build:admin": "node node_modules/@medusajs/cli/cli.js build --admin-only && npm run copy-admin",
-    "copy-admin": "mkdir -p admin && cp -r .medusa/client/* admin/ && echo 'Admin copied successfully'",
+    "copy-admin": "mkdir -p admin && cp -r .medusa/client/.medusa/admin/* admin/ && echo 'Admin copied to admin/ directory'",
     "seed": "medusa exec ./src/scripts/seed.ts",
     "clear-seed": "medusa exec ./src/scripts/clear-seed-data.ts",
     "reseed": "npm run clear-seed && npm run seed",
