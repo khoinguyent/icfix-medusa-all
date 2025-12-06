@@ -15,7 +15,7 @@ module.exports = defineConfig({
       // Vite config for admin build (used when --admin-only flag is used)
       return {
         ...config,
-        base: "/app",
+        base: process.env.VITE_BASE_PATH || "/app",
         build: {
           ...config.build,
           outDir: ".medusa/admin",
