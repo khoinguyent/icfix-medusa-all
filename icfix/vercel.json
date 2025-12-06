@@ -1,5 +1,22 @@
 {
   "installCommand": "npm install --legacy-peer-deps",
   "buildCommand": "echo \"VITE_ADMIN_BACKEND_URL is set to: $VITE_ADMIN_BACKEND_URL\" && npx medusa build --admin-only",
-  "outputDirectory": ".medusa/admin"
+  "outputDirectory": ".medusa/admin",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }

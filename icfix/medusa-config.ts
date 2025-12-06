@@ -8,7 +8,19 @@ module.exports = defineConfig({
     "medusa-admin-webhooks-ui": true,
   },
   admin: {
-    disable: true,
+    disable: false, // Enable admin for Vercel build
+    backendUrl: process.env.VITE_ADMIN_BACKEND_URL || process.env.MEDUSA_BACKEND_URL || "http://localhost:9000",
+    // @ts-ignore
+    vite: (config) => {
+      return {
+        ...config,
+        base: "/",
+        build: {
+          ...config.build,
+          outDir: ".medusa/admin",
+        },
+      }
+    },
     // @ts-ignore
     features: {
       "medusa-admin-workflows-ui": true,
