@@ -24,13 +24,9 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} data-mode="light">
-      <body>
-        <NextIntlClientProvider messages={messages}>
-          <main className="relative">{children}</main>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages}>
+      <main className="relative">{children}</main>
+    </NextIntlClientProvider>
   );
 }
 

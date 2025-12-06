@@ -5,9 +5,7 @@ checkEnvVariables()
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-/**
- * @type {import('next').NextConfig}
- */
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   logging: {

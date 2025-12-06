@@ -118,8 +118,39 @@ export async function middleware(request: NextRequest) {
   const segments = urlPath.split('/').filter(Boolean)
   const locale = segments[0]
   
-  // Determine country code based on locale
-  const countryCode = localeToCountryCode[locale as keyof typeof localeToCountryCode] || DEFAULT_REGION
+  // Determine expected country code based on locale
+  const expectedCountryCode = localeToCountryCode[locale as keyof typeof localeToCountryCode] || DEFAULT_REGION
+
+  // Check if URL already has countryCode (second segment should be a valid country code)
+  // Valid country codes from the region map or known mappings
+  const validCountryCodes = new Set(['vn', 'us', 'jp', 'cn', 'gb', 'au', 'ca'])
+  const urlCountryCode = segments.length > 1 && validCountryCodes.has(segments[1]) ? segments[1] : null
+
+  // If URL has a country code that doesn't match the locale, redirect to correct one
+  if (urlCountryCode && urlCountryCode !== expectedCountryCode && routing.locales.includes(locale as any)) {
+    const restOfPath = segments.slice(2).join('/')
+    const newPath = `/${locale}/${expectedCountryCode}${restOfPath ? '/' + restOfPath : ''}`
+    const newUrl = request.nextUrl.clone()
+    newUrl.pathname = newPath
+    // Preserve query string
+    if (request.nextUrl.search) {
+      newUrl.search = request.nextUrl.search
+    }
+    return NextResponse.redirect(newUrl)
+  }
+
+  // If URL doesn't have countryCode and has a locale, rewrite it to include countryCode
+  if (!urlCountryCode && locale && routing.locales.includes(locale as any)) {
+    const restOfPath = segments.slice(1).join('/')
+    const newPath = `/${locale}/${expectedCountryCode}${restOfPath ? '/' + restOfPath : ''}`
+    const newUrl = request.nextUrl.clone()
+    newUrl.pathname = newPath
+    // Preserve query string
+    if (request.nextUrl.search) {
+      newUrl.search = request.nextUrl.search
+    }
+    return NextResponse.redirect(newUrl)
+  }
 
   // Run next-intl middleware
   const response = intlMiddleware(request)
@@ -132,8 +163,8 @@ export async function middleware(request: NextRequest) {
     })
   }
 
-  if (response && countryCode) {
-    response.cookies.set("_medusa_country_code", countryCode, {
+  if (response && expectedCountryCode) {
+    response.cookies.set("_medusa_country_code", expectedCountryCode, {
       maxAge: 60 * 60 * 24,
       path: '/',
     })
