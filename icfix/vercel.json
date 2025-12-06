@@ -4,7 +4,7 @@
   "outputDirectory": "admin",
   "rewrites": [
     {
-      "source": "/((?!assets/).*)",
+      "source": "/((?!app/assets/).*)",
       "destination": "/index.html"
     }
   ],
