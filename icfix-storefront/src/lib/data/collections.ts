@@ -4,7 +4,7 @@ import { sdk } from "@lib/config"
 import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
 
-export const retrieveCollection = async (id: string) => {
+export const retrieveCollection = async (id: string, includeProducts: boolean = false) => {
   const dynamicCacheOptions = await getCacheOptions("collections")
   
   // Combine dynamic cache tags (from cookies) with static tag (for webhook revalidation)
@@ -17,10 +17,16 @@ export const retrieveCollection = async (id: string) => {
     tags: cacheTags,
   }
 
+  const query: Record<string, string> = {}
+  if (includeProducts) {
+    query.fields = "*products"
+  }
+
   return sdk.client
     .fetch<{ collection: HttpTypes.StoreCollection }>(
       `/store/collections/${id}`,
       {
+        query,
         next,
       }
     )

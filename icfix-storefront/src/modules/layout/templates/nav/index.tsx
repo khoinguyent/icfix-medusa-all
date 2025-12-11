@@ -6,13 +6,12 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 import LanguageSwitcher from "@modules/common/components/language-switcher"
 import FilePlus from "@modules/common/icons/file-plus"
 import LogoIcon from "@modules/common/icons/logo"
-import { MegaMenuWrapper } from "@modules/layout/components/mega-menu"
+import { CategoryDropdownHeaderWrapper } from "@modules/layout/components/category-dropdown-header/wrapper"
 import SearchInput from "@modules/layout/components/search-input"
 import { RequestQuoteConfirmation } from "@modules/quotes/components/request-quote-confirmation"
 import { RequestQuotePrompt } from "@modules/quotes/components/request-quote-prompt"
 import SkeletonAccountButton from "@modules/skeletons/components/skeleton-account-button"
 import SkeletonCartButton from "@modules/skeletons/components/skeleton-cart-button"
-import SkeletonMegaMenu from "@modules/skeletons/components/skeleton-mega-menu"
 import { Suspense } from "react"
 
 export async function NavigationHeader() {
@@ -34,15 +33,14 @@ export async function NavigationHeader() {
               </h1>
             </LocalizedClientLink>
 
-            <nav>
-              <ul className="space-x-4 hidden small:flex">
-                <li>
-                  <Suspense fallback={<SkeletonMegaMenu />}>
-                    <MegaMenuWrapper />
-                  </Suspense>
-                </li>
-              </ul>
-            </nav>
+            {/* Category Dropdown - NextMerce style */}
+            <div className="hidden small:block">
+              <Suspense fallback={
+                <div className="h-10 w-40 bg-neutral-200 rounded-lg animate-pulse" />
+              }>
+                <CategoryDropdownHeaderWrapper />
+              </Suspense>
+            </div>
           </div>
           <div className="flex justify-end items-center gap-2">
             <SearchInput />

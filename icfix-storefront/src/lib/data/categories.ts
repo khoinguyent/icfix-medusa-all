@@ -35,9 +35,27 @@ export const listCategories = async (
       next,
     })
 
-    return product_categories
+    if (process.env.NODE_ENV === "development") {
+      console.log("[listCategories] Fetched categories:", product_categories?.length || 0)
+      if (product_categories && product_categories.length > 0) {
+        console.log("[listCategories] Sample category:", {
+          id: product_categories[0].id,
+          name: product_categories[0].name,
+          handle: product_categories[0].handle,
+          parent_category_id: product_categories[0].parent_category_id,
+        })
+      }
+    }
+
+    return product_categories || []
   } catch (error) {
-    console.warn("Could not fetch categories, returning empty list:", error)
+    console.error("Could not fetch categories:", error)
+    if (process.env.NODE_ENV === "development") {
+      console.error("Category fetch error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
+    }
     return []
   }
 }

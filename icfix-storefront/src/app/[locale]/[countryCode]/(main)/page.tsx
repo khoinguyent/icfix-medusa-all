@@ -1,6 +1,10 @@
 import { listRegions } from "@lib/data/regions"
+import { getHomepageContent, getHeroBanners } from "@lib/data/homepage"
 import FeaturedProducts from "@modules/home/components/featured-products"
-import Hero from "@modules/home/components/hero"
+import HeroCarousel from "@modules/home/components/hero-carousel"
+import ServiceFeatures from "@modules/home/components/service-features"
+import Testimonials from "@modules/home/components/testimonials"
+import HomepageSections from "@modules/home/components/homepage-sections"
 import SkeletonFeaturedProducts from "@modules/skeletons/templates/skeleton-featured-products"
 import { Metadata } from "next"
 import { Suspense } from "react"
@@ -42,15 +46,45 @@ export default async function Home(props: {
   params: Promise<{ countryCode: string }>
 }) {
   const params = await props.params
-
   const { countryCode } = params
 
+  // Fetch all homepage content from database
+  const homepageContent = await getHomepageContent()
+  const heroBanners = await getHeroBanners("hero")
+
+  // Extract data
+  const { service_features, testimonials, homepage_sections } = homepageContent
+
   return (
-    <div className="flex flex-col gap-y-2 m-2">
-      <Hero />
-      <Suspense fallback={<SkeletonFeaturedProducts />}>
-        <FeaturedProducts countryCode={countryCode} />
-      </Suspense>
+    <div className="flex flex-col gap-y-0">
+      {/* Hero Carousel - Dynamic banners from database */}
+      {heroBanners.length > 0 ? (
+        <HeroCarousel banners={heroBanners} />
+      ) : null}
+
+      {/* Service Features - Free Shipping, Returns, etc. */}
+      {service_features.length > 0 && (
+        <ServiceFeatures features={service_features} />
+      )}
+
+      {/* Homepage Sections - Dynamic sections from database */}
+      {homepage_sections.length > 0 && (
+        <Suspense fallback={<SkeletonFeaturedProducts />}>
+          <HomepageSections sections={homepage_sections} countryCode={countryCode} />
+        </Suspense>
+      )}
+
+      {/* Featured Products - Fallback to collections if no sections */}
+      {homepage_sections.length === 0 && (
+        <Suspense fallback={<SkeletonFeaturedProducts />}>
+          <FeaturedProducts countryCode={countryCode} />
+        </Suspense>
+      )}
+
+      {/* Testimonials - Only render if NOT already included in homepage sections */}
+      {testimonials.length > 0 && 
+       !homepage_sections.some(s => s.section_type === "testimonials" && s.is_active) && 
+       <Testimonials testimonials={testimonials} />}
     </div>
   )
 }
