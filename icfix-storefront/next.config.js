@@ -1,10 +1,11 @@
 const checkEnvVariables = require("./check-env-variables")
+const createNextIntlPlugin = require('next-intl/plugin');
 
 checkEnvVariables()
 
-/**
- * @type {import('next').NextConfig}
- */
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   logging: {
@@ -52,4 +53,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withNextIntl(nextConfig)

@@ -1,0 +1,51 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "bash scripts/deploy-latest.sh\r"
+        expect {
+            "Deployment complete" {
+                send "echo 'Script completed'\r"
+                exp_continue
+            }
+            "ERROR" {
+                send "echo 'Error occurred'\r"
+                exp_continue
+            }
+            "# " {
+                send "echo 'Command finished'\r"
+                exp_continue
+            }
+            timeout {
+                send "\r"
+                exp_continue
+            }
+        }
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

@@ -1,0 +1,26 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa && docker pull ghcr.io/khoinguyent/icfix-backend:latest && sed -i 's|ghcr.io/khoinguyent/icfix-backend:.*|ghcr.io/khoinguyent/icfix-backend:latest|g' docker-compose.yml && docker-compose stop medusa-backend && docker-compose up -d medusa-backend && sleep 15 && docker-compose ps medusa-backend && echo '=== Backend logs (last 40 lines) ===' && docker-compose logs --tail=40 medusa-backend\r"
+        expect "# "
+        send "exit\r"
+    }
+}
+
+expect eof

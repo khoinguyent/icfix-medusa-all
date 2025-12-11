@@ -8,7 +8,21 @@ module.exports = defineConfig({
     "medusa-admin-webhooks-ui": true,
   },
   admin: {
-    disable: true,
+    disable: true, // Disabled for backend server (admin built separately on Vercel)
+    path: "/", // Admin path for router basename (must match Cloudflare Pages root deployment)
+    backendUrl: process.env.VITE_ADMIN_BACKEND_URL || process.env.MEDUSA_BACKEND_URL || "https://icfix.duckdns.org",
+    // @ts-ignore
+    vite: (config) => {
+      // Vite config for admin build (used when --admin-only flag is used)
+      return {
+        ...config,
+        base: process.env.VITE_BASE_PATH || "/",
+        build: {
+          ...config.build,
+          outDir: ".medusa/admin",
+        },
+      }
+    },
     // @ts-ignore
     features: {
       "medusa-admin-workflows-ui": true,
@@ -29,26 +43,8 @@ module.exports = defineConfig({
     },
   },
   plugins: [
-    {
-      resolve: "@lambdacurry/medusa-plugin-webhooks",
-      options: {
-        enableUI: true,
-        customSubscriptions: [
-          "product.created",
-          "product.updated",
-          "product.deleted",
-          "product-variant.created",
-          "product-variant.updated",
-          "product-variant.deleted",
-          "product-collection.created",
-          "product-collection.updated",
-          "product-collection.deleted",
-          "product-category.created",
-          "product-category.updated",
-          "product-category.deleted",
-        ],
-      },
-    },
+    // Note: Webhook functionality is now handled by src/subscribers/vercel-revalidate.ts
+    // The @lambdacurry/medusa-plugin-webhooks has been removed due to v1/v2 compatibility issues
   ],
   modules: [
     {

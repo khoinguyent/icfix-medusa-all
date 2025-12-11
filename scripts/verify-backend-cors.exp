@@ -1,0 +1,100 @@
+#!/usr/bin/expect -f
+
+# Verify Backend CORS Configuration
+# This script checks:
+# 1. ADMIN_CORS environment variable
+# 2. CORS headers in API responses
+# 3. No duplicate headers from Nginx
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        
+        # Check ADMIN_CORS in .env
+        send "echo '=== 1. Checking ADMIN_CORS in .env ==='\r"
+        expect "# "
+        send "grep '^ADMIN_CORS=' .env\r"
+        expect "# "
+        
+        # Check if CORS has duplicates in the value itself
+        send "echo '=== 2. Checking for duplicate values in ADMIN_CORS ==='\r"
+        expect "# "
+        send "grep '^ADMIN_CORS=' .env | cut -d= -f2 | tr ',' '\\n' | sort | uniq -d | wc -l | xargs -I {} test {} -eq 0 && echo 'No duplicates in value' || echo 'Found duplicates'\r"
+        expect "# "
+        
+        # Check backend container environment variables
+        send "echo '=== 3. Checking Backend Container ADMIN_CORS ==='\r"
+        expect "# "
+        send "docker exec icfix-backend env | grep ADMIN_CORS || echo 'ADMIN_CORS not found in container'\r"
+        expect "# "
+        
+        # Test CORS headers with OPTIONS request (preflight)
+        send "echo '=== 4. Testing CORS Preflight (OPTIONS) ==='\r"
+        expect "# "
+        send "curl -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' -H 'Access-Control-Request-Method: GET' -H 'Access-Control-Request-Headers: Content-Type' http://localhost:9000/admin/feature-flags 2>&1 | grep -i 'access-control' || echo 'No CORS headers found'\r"
+        expect "# "
+        
+        # Test CORS headers with actual GET request
+        send "echo '=== 5. Testing CORS Headers (GET) ==='\r"
+        expect "# "
+        send "curl -i -X GET -H 'Origin: https://admin.icfix.vn' http://localhost:9000/health 2>&1 | grep -i 'access-control' || echo 'No CORS headers in response'\r"
+        expect "# "
+        
+        # Check Nginx config for CORS headers
+        send "echo '=== 6. Checking Nginx Config for CORS Headers ==='\r"
+        expect "# "
+        send "grep -n 'Access-Control-Allow-Origin' nginx/conf.d/medusa.conf 2>/dev/null | wc -l | xargs -I {} echo \"Found {} CORS header(s) in Nginx config\" || echo 'Nginx config not found or no CORS headers'\r"
+        expect "# "
+        
+        # Test through Nginx (external) to see actual headers
+        send "echo '=== 7. Testing CORS Headers Through Nginx (External) ==='\r"
+        expect "# "
+        send "curl -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' -H 'Access-Control-Request-Method: GET' https://icfix.duckdns.org/admin/feature-flags 2>&1 | head -20\r"
+        expect "# "
+        
+        # Check for duplicate Access-Control-Allow-Origin headers in response
+        send "echo '=== 8. Checking for Duplicate Headers in Response ==='\r"
+        expect "# "
+        send "CORS_COUNT=$(curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' -H 'Access-Control-Request-Method: GET' https://icfix.duckdns.org/admin/feature-flags 2>&1 | grep -ic 'access-control-allow-origin'); if [ \"$CORS_COUNT\" -le 1 ]; then echo '✅ Single CORS header (correct)'; else echo '❌ Multiple CORS headers found'; fi\r"
+        expect "# "
+        
+        # Check backend health
+        send "echo '=== 9. Backend Health Check ==='\r"
+        expect "# "
+        send "docker-compose ps medusa-backend\r"
+        expect "# "
+        
+        # Check backend logs for CORS errors
+        send "echo '=== 10. Recent Backend Logs (CORS related) ==='\r"
+        expect "# "
+        send "docker-compose logs --tail=20 medusa-backend 2>&1 | grep -i cors || echo 'No CORS-related log entries'\r"
+        expect "# "
+        
+        send "echo '=== Verification Complete ==='\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

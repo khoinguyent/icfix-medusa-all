@@ -20,6 +20,7 @@ out/
 # Env and OS
 .env
 .env.*
+scripts/.env
 .DS_Store
 
 # Tooling

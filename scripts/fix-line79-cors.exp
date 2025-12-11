@@ -1,0 +1,77 @@
+#!/usr/bin/expect -f
+
+# Fix line 79 - Split comment and add_header onto separate lines
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Fixing Line 79 CORS Header"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Read line 79 to see what it looks like
+puts "=== Current line 79 ===\n"
+send "sed -n '79p' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Replace line 79 with properly formatted version
+puts "\n=== Fixing line 79 ===\n"
+send "sed -i '79s/.*/# CORS: Allow origin (credentials handled by backend)/' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Add the add_header on the next line (line 80)
+send "sed -i '79a\\    add_header Access-Control-Allow-Origin \\\$http_origin always;' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Verify
+puts "\n=== Verifying fix ===\n"
+send "sed -n '79,81p' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Test and reload
+puts "\n=== Testing and reloading nginx ===\n"
+send "docker exec icfix-nginx nginx -t\r"
+expect -re "#|\\$"
+
+send "docker exec icfix-nginx nginx -s reload\r"
+expect -re "#|\\$"
+
+puts "\n✅ Line 79 fixed. CORS header should now work.\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

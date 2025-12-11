@@ -1,0 +1,36 @@
+# Dockerfile for Local Storefront Development
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Enable Corepack for Yarn 3
+RUN corepack enable
+
+# Copy all files first (Yarn PnP needs .yarn directory)
+COPY . .
+
+# Install dependencies (if not already installed)
+RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
+    else npm ci; fi
+
+# Build Next.js app (NEXT_PUBLIC_* vars are embedded at build time)
+ARG NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://icfix.duckdns.org
+ARG NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+ARG NEXT_PUBLIC_DEFAULT_REGION=vn
+
+ENV NEXT_PUBLIC_MEDUSA_BACKEND_URL=$NEXT_PUBLIC_MEDUSA_BACKEND_URL
+ENV NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=$NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_DEFAULT_REGION=$NEXT_PUBLIC_DEFAULT_REGION
+
+# Remove .env.local files before build to ensure build args take precedence
+# Next.js reads .env.local with higher priority than ENV vars
+RUN rm -f .env.local .env.local.* 2>/dev/null || true
+
+RUN yarn build
+
+# Expose port
+EXPOSE 3000
+
+# Start Next.js production server
+CMD ["yarn", "start"]
+

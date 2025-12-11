@@ -1,0 +1,31 @@
+#!/usr/bin/expect -f
+
+# Load environment variables
+set script_dir [file dirname [file normalize [info script]]]
+source [file join $script_dir load-env.exp]
+
+set timeout 180
+set server_ip $::server_ip
+set server_user $::server_user
+set server_pass $::server_pass
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa && docker-compose pull medusa-backend && docker-compose stop medusa-backend && docker-compose up -d medusa-backend && docker image prune -af --filter 'until=24h' && sleep 15 && docker-compose ps medusa-backend && echo '=== Recent Logs ===' && docker-compose logs --tail=30 medusa-backend\r"
+        expect "# "
+        send "exit\r"
+    }
+}
+
+expect eof
+

@@ -1,0 +1,100 @@
+#!/usr/bin/expect -f
+
+# Server credentials
+set SERVER_IP "116.118.48.209"
+set SERVER_USER "root"
+set SERVER_PASS "46532@Nvc"
+set timeout 30
+
+puts "======================================"
+puts "Checking Backend Server Resources"
+puts "======================================"
+puts "Server: $SERVER_IP"
+puts ""
+
+# Start SSH connection
+spawn ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP
+
+expect {
+    "password:" {
+        send "$SERVER_PASS\r"
+        expect {
+            "#" {
+                puts "\n=== CONNECTED TO SERVER ===\n"
+                
+                # Check disk space
+                puts "=== DISK SPACE ==="
+                send "df -h | grep -E '(Filesystem|/$|/home|/var)'\r"
+                expect "#"
+                
+                puts "\n=== DISK USAGE DETAILS ==="
+                send "df -h /\r"
+                expect "#"
+                
+                # Check memory
+                puts "\n=== MEMORY (RAM) ==="
+                send "free -h\r"
+                expect "#"
+                
+                # Check CPU info
+                puts "\n=== CPU INFO ==="
+                send "lscpu | grep -E '(Model name|CPU\\(s\\)|Thread|Core)'\r"
+                expect "#"
+                
+                # Check system load
+                puts "\n=== SYSTEM LOAD ==="
+                send "uptime\r"
+                expect "#"
+                
+                # Check Docker space usage
+                puts "\n=== DOCKER DISK USAGE ==="
+                send "docker system df\r"
+                expect "#"
+                
+                # Check running containers
+                puts "\n=== RUNNING CONTAINERS ==="
+                send "docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Size}}'\r"
+                expect "#"
+                
+                # Check Docker images
+                puts "\n=== DOCKER IMAGES ==="
+                send "docker images --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.Size}}'\r"
+                expect "#"
+                
+                # Check available space in project directory
+                puts "\n=== PROJECT DIRECTORY ==="
+                send "du -sh /root/medusa-backend 2>/dev/null || echo 'Directory not found'\r"
+                expect "#"
+                
+                # Check build requirements estimate
+                puts "\n=== ESTIMATING BUILD REQUIREMENTS ==="
+                send "echo 'Typical Node.js build requirements:'\r"
+                expect "#"
+                send "echo '- Disk space: ~2-5GB for node_modules + build artifacts'\r"
+                expect "#"
+                send "echo '- RAM: ~2-4GB during build process'\r"
+                expect "#"
+                send "echo '- CPU: Multi-core helpful but not required'\r"
+                expect "#"
+                
+                puts "\n=== CHECKING SWAP SPACE ==="
+                send "swapon --show\r"
+                expect "#"
+                
+                puts "\n=== Resource Check Complete ===\n"
+                send "exit\r"
+            }
+        }
+    }
+    timeout {
+        puts "\nConnection timeout"
+        exit 1
+    }
+    eof {
+        puts "\nConnection failed"
+        exit 1
+    }
+}
+
+expect eof
+

@@ -1,0 +1,59 @@
+#!/usr/bin/expect -f
+
+# Deploy new backend image with CORS middleware fix
+# Wait for GitHub Actions to build, then pull and deploy
+
+set timeout 180
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        
+        send "echo '=== Pulling latest backend image (with CORS middleware fix) ==='\r"
+        expect "# "
+        send "docker pull ghcr.io/khoinguyent/icfix-backend:latest\r"
+        expect "# "
+        
+        send "echo '=== Stopping backend ==='\r"
+        expect "# "
+        send "docker-compose stop medusa-backend\r"
+        expect "# "
+        
+        send "echo '=== Starting backend with new image ==='\r"
+        expect "# "
+        send "docker-compose up -d medusa-backend\r"
+        expect "# "
+        
+        send "sleep 15\r"
+        expect "# "
+        
+        send "echo '=== Checking backend status ==='\r"
+        expect "# "
+        send "docker-compose ps medusa-backend\r"
+        expect "# "
+        
+        send "echo '=== Testing CORS preflight (OPTIONS) ==='\r"
+        expect "# "
+        send "sleep 5 && curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' -H 'Access-Control-Request-Method: GET' http://localhost:9000/admin/feature-flags 2>&1 | grep -i 'access-control-allow-origin'\r"
+        expect "# "
+        
+        send "exit\r"
+    }
+}
+
+expect eof
+

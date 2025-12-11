@@ -1,0 +1,82 @@
+#!/usr/bin/expect -f
+
+# Fix Duplicate CORS Headers - Simple Fix
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Fixing Duplicate CORS Headers"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Backup
+puts "=== Backing up configuration ===\n"
+send "cp nginx/conf.d/medusa.conf nginx/conf.d/medusa.conf.backup\r"
+expect -re "#|\\$"
+
+# The fix: Remove Access-Control-Allow-Credentials from main location block
+# Medusa backend already sets it, so nginx shouldn't duplicate it
+puts "\n=== Removing duplicate Access-Control-Allow-Credentials ===\n"
+send "sed -i '/# CORS on non-OPTIONS responses/,/add_header Access-Control-Allow-Credentials/d' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Add back only Access-Control-Allow-Origin (without credentials)
+send "sed -i '/proxy_cache_bypass.*http_upgrade;/a\\    # CORS on non-OPTIONS responses (Origin only, credentials from backend)\\    add_header Access-Control-Allow-Origin \\\$http_origin always;' nginx/conf.d/medusa.conf\r"
+expect -re "#|\\$"
+
+# Verify the fix
+puts "\n=== Verifying fix ===\n"
+send "grep -A 2 'CORS on non-OPTIONS' nginx/conf.d/medusa.conf || echo 'Section updated'\r"
+expect -re "#|\\$"
+
+# Test nginx config
+puts "\n=== Testing nginx configuration ===\n"
+send "docker exec icfix-nginx nginx -t\r"
+expect -re "#|\\$"
+
+# Reload nginx
+puts "\n=== Reloading nginx ===\n"
+send "docker exec icfix-nginx nginx -s reload\r"
+expect -re "#|\\$"
+
+puts "\n✅ Nginx configuration updated and reloaded\n"
+puts "The duplicate Access-Control-Allow-Credentials header has been removed.\n"
+puts "Medusa backend will handle the credentials header.\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

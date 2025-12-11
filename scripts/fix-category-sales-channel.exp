@@ -1,0 +1,79 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Step 1: Checking how visible categories are configured ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT id, handle, name, is_active, is_internal, rank FROM product_category WHERE is_active = true AND is_internal = false ORDER BY rank LIMIT 10;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Step 2: Checking publishable API key sales channel association ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT pk.id, pk.type, COUNT(pksc.sales_channel_id) as channel_count FROM api_key pk LEFT JOIN publishable_api_key_sales_channel pksc ON pk.id = pksc.publishable_key_id WHERE pk.type = 'publishable' GROUP BY pk.id, pk.type ORDER BY pk.created_at DESC LIMIT 5;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Step 3: Checking if products in category have sales channel ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"SELECT pcp.product_id, COUNT(psc.sales_channel_id) as channel_count FROM product_category_product pcp LEFT JOIN product_sales_channel psc ON pcp.product_id = psc.product_id WHERE pcp.product_category_id = 'pcat_01KBPY6807G3PWWV5N8WZ9CRBV' GROUP BY pcp.product_id LIMIT 5;\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Step 4: Getting Default Sales Channel ID ==='\r"
+        expect "# "
+        send "SC_ID=$(docker exec icfix-postgres psql -U icfix_admin icfix_db -t -c \"SELECT id FROM sales_channel WHERE name = 'Default Sales Channel' LIMIT 1;\" | xargs)\r"
+        expect "# "
+        send "echo \"Sales Channel ID: \$SC_ID\"\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Step 5: Ensuring products in category are associated with sales channel ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_admin icfix_db -c \"INSERT INTO product_sales_channel (product_id, sales_channel_id) SELECT DISTINCT pcp.product_id, '\$SC_ID' FROM product_category_product pcp WHERE pcp.product_category_id = 'pcat_01KBPY6807G3PWWV5N8WZ9CRBV' AND NOT EXISTS (SELECT 1 FROM product_sales_channel psc WHERE psc.product_id = pcp.product_id AND psc.sales_channel_id = '\$SC_ID') ON CONFLICT DO NOTHING;\"\r"
+        expect "# "
+        send "echo 'Products associated with sales channel'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Step 6: Verifying category can be accessed via Store API ==='\r"
+        expect "# "
+        send "sleep 2\r"
+        expect "# "
+        send "curl -s 'http://localhost:9000/store/product-categories?handle=ic-fix-face' | jq -r '.product_categories | length' || echo '0'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Step 7: Triggering revalidation ==='\r"
+        expect "# "
+        send "curl -s -X POST 'https://store.icfix.vn/api/revalidate?secret=ed81a378f205e1549695f6f74ebcbd0b1d0fd0ca8e66a1439c92531d27dbe615&event=force' -H 'Content-Type: application/json' -d '{}' | jq -r '.revalidated' || echo 'Revalidation failed'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

@@ -1,0 +1,89 @@
+#!/usr/bin/expect -f
+
+# Check SSL Certificate in Docker Nginx Container
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Checking Docker Nginx SSL Configuration"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+# Navigate to docker-compose directory
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Check nginx container
+puts "=== Nginx Container Status ===\n"
+send "docker ps | grep nginx\r"
+expect -re "#|\\$"
+
+# Check nginx configuration inside container
+puts "\n=== Nginx Configuration Files ===\n"
+send "docker exec icfix-nginx ls -la /etc/nginx/conf.d/\r"
+expect -re "#|\\$"
+
+send "docker exec icfix-nginx cat /etc/nginx/conf.d/default.conf 2>/dev/null || docker exec icfix-nginx cat /etc/nginx/nginx.conf 2>/dev/null | head -50\r"
+expect -re "#|\\$"
+
+# Check SSL certificates in container
+puts "\n=== SSL Certificates in Container ===\n"
+send "docker exec icfix-nginx ls -la /etc/nginx/ssl/ 2>/dev/null || docker exec icfix-nginx ls -la /etc/letsencrypt/ 2>/dev/null || echo 'No SSL directory found'\r"
+expect -re "#|\\$"
+
+# Check mounted volumes
+puts "\n=== Docker Volume Mounts ===\n"
+send "docker inspect icfix-nginx | grep -A 20 'Mounts' | head -25\r"
+expect -re "#|\\$"
+
+# Check docker-compose.yml for nginx service
+puts "\n=== Docker Compose Nginx Service Config ===\n"
+send "grep -A 20 'nginx:' docker-compose.yml | head -25\r"
+expect -re "#|\\$"
+
+# Check if certbot container exists
+puts "\n=== Certbot Container ===\n"
+send "docker ps -a | grep certbot || echo 'No certbot container found'\r"
+expect -re "#|\\$"
+
+# Test SSL connection
+puts "\n=== Testing SSL Connection ===\n"
+send "docker exec icfix-nginx openssl s_client -connect localhost:443 -servername api.icfix.vn 2>/dev/null | grep -E '(subject=|issuer=|Verify return code)' | head -5 || echo 'Cannot test SSL'\r"
+expect -re "#|\\$"
+
+puts "\n=========================================\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

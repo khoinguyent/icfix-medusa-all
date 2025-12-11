@@ -1,0 +1,121 @@
+#!/usr/bin/expect -f
+
+# Update Backend CORS for Local Development
+# This script adds localhost URLs to backend CORS settings
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+# Local URLs to add
+set admin_local "http://localhost:3001"
+set store_local "http://localhost:3000"
+
+puts "\n========================================="
+puts "  Update Backend CORS for Local Dev"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+# Navigate to backend directory
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Backup current .env
+send "cp .env .env.backup.cors\r"
+expect -re "#|\\$"
+puts "✅ Backed up .env to .env.backup.cors\n"
+
+# Check current CORS settings
+send "echo '=== Current CORS Settings ==='\r"
+expect -re "#|\\$"
+send "grep -E '(ADMIN_CORS|STORE_CORS|AUTH_CORS)=' .env\r"
+expect -re "#|\\$"
+
+# Update ADMIN_CORS
+send "sed -i 's|ADMIN_CORS=\\(.*\\)|ADMIN_CORS=\\1,$admin_local|' .env\r"
+expect -re "#|\\$"
+
+# Update STORE_CORS
+send "sed -i 's|STORE_CORS=\\(.*\\)|STORE_CORS=\\1,$store_local|' .env\r"
+expect -re "#|\\$"
+
+# Update AUTH_CORS
+send "sed -i 's|AUTH_CORS=\\(.*\\)|AUTH_CORS=\\1,$admin_local,$store_local|' .env\r"
+expect -re "#|\\$"
+
+puts "\n✅ Updated CORS settings\n"
+
+# Show updated settings
+send "echo '=== Updated CORS Settings ==='\r"
+expect -re "#|\\$"
+send "grep -E '(ADMIN_CORS|STORE_CORS|AUTH_CORS)=' .env\r"
+expect -re "#|\\$"
+
+# Restart backend container
+puts "\n🔄 Restarting backend container...\n"
+send "docker-compose restart medusa-backend\r"
+expect {
+    -re "Restarting.*done|Container.*Started" {
+        puts "\n✅ Backend restarted successfully\n"
+    }
+    timeout {
+        puts "\n⚠️  Backend restart timeout (might still be restarting)\n"
+    }
+}
+expect -re "#|\\$"
+
+# Wait for backend to be ready
+puts "\n⏳ Waiting for backend to be ready (15 seconds)...\n"
+send "sleep 15\r"
+expect -re "#|\\$"
+
+# Check backend status
+send "docker ps | grep medusa-backend\r"
+expect -re "#|\\$"
+
+# Test backend health
+send "curl -s http://localhost:9000/health || echo 'Backend not responding yet'\r"
+expect -re "#|\\$"
+
+puts "\n========================================="
+puts "  CORS Update Complete!"
+puts "=========================================\n"
+puts "Backend now accepts requests from:"
+puts "  - https://admin.icfix.vn"
+puts "  - http://localhost:3001 (local admin)"
+puts "  - https://store.icfix.vn"
+puts "  - http://localhost:3000 (local frontend)\n"
+puts "You can now run: ./scripts/setup-local-admin.sh\n"
+
+# Close connection
+send "exit\r"
+expect eof
+

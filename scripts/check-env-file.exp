@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "echo '=== Found .env file at: /root/icfix-medusa/.env ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== REVALIDATE and WEBHOOK variables ==='\r"
+        expect "# "
+        send "grep -E 'REVALIDATE|WEBHOOK' /root/icfix-medusa/.env || echo 'No REVALIDATE/WEBHOOK vars found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Full REVALIDATE_ENDPOINT line ==='\r"
+        expect "# "
+        send "grep 'REVALIDATE_ENDPOINT' /root/icfix-medusa/.env || echo 'Not found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking docker-compose directory ==='\r"
+        expect "# "
+        send "cd /root/icfix-medusa && pwd\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Listing files ==='\r"
+        expect "# "
+        send "ls -la | grep -E 'docker-compose|\.env'\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof

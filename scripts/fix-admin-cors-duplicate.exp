@@ -1,0 +1,97 @@
+#!/usr/bin/expect -f
+
+# Fix duplicate Access-Control-Allow-Origin headers for Admin CORS
+# This script ensures ADMIN_CORS has only unique values and removes duplicate headers from Nginx
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        
+        # Check current ADMIN_CORS value
+        send "echo '=== Current ADMIN_CORS value ==='\r"
+        expect "# "
+        send "grep '^ADMIN_CORS=' .env 2>/dev/null || echo 'ADMIN_CORS not found'\r"
+        expect "# "
+        
+        # Fix ADMIN_CORS: Remove duplicates and ensure only https://admin.icfix.vn
+        send "echo '=== Fixing ADMIN_CORS (removing duplicates) ==='\r"
+        expect "# "
+        send "sed -i 's|^ADMIN_CORS=.*|ADMIN_CORS=https://admin.icfix.vn|' .env\r"
+        expect "# "
+        
+        # Verify the fix
+        send "echo '=== Updated ADMIN_CORS value ==='\r"
+        expect "# "
+        send "grep '^ADMIN_CORS=' .env\r"
+        expect "# "
+        
+        # Check Nginx config for duplicate Access-Control-Allow-Origin headers
+        send "echo '=== Checking Nginx CORS headers ==='\r"
+        expect "# "
+        send "test -f nginx/conf.d/medusa.conf && grep -n 'Access-Control-Allow-Origin' nginx/conf.d/medusa.conf | head -10 || echo 'Nginx config not found'\r"
+        expect "# "
+        
+        # Check if nginx container exists and get its name
+        send "echo '=== Finding Nginx container ==='\r"
+        expect "# "
+        send "docker ps --format '{{.Names}}' | grep -i nginx | head -1\r"
+        expect "# "
+        
+        # Since Medusa handles CORS internally, we should REMOVE CORS headers from Nginx
+        # to avoid duplicates. Nginx should only proxy, not add CORS headers.
+        send "echo '=== Removing CORS headers from Nginx (Medusa handles CORS) ==='\r"
+        expect "# "
+        send "test -f nginx/conf.d/medusa.conf && sed -i '/add_header Access-Control-Allow-Origin/d' nginx/conf.d/medusa.conf && sed -i '/# CORS/d' nginx/conf.d/medusa.conf && echo 'Removed CORS headers from Nginx' || echo 'Nginx config not found'\r"
+        expect "# "
+        
+        # Test and reload Nginx
+        send "echo '=== Testing and reloading Nginx ==='\r"
+        expect "# "
+        send "docker exec icfix-nginx nginx -t 2>&1\r"
+        expect "# "
+        send "docker exec icfix-nginx nginx -s reload 2>&1\r"
+        expect "# "
+        send "echo 'Nginx reloaded successfully'\r"
+        expect "# "
+        
+        # Restart backend to pick up new ADMIN_CORS value
+        send "echo '=== Restarting backend to apply new CORS config ==='\r"
+        expect "# "
+        send "docker-compose restart medusa-backend\r"
+        expect "# "
+        
+        send "sleep 5\r"
+        expect "# "
+        
+        # Verify backend is running
+        send "echo '=== Checking backend status ==='\r"
+        expect "# "
+        send "docker-compose ps medusa-backend\r"
+        expect "# "
+        
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

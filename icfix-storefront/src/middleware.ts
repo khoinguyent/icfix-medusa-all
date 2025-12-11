@@ -1,5 +1,8 @@
 import { HttpTypes } from "@medusajs/types"
 import { NextRequest, NextResponse } from "next/server"
+import createMiddleware from 'next-intl/middleware';
+import { routing } from './i18n/routing';
+import { countryCodeToLocale, localeToCountryCode, defaultLocale } from './i18n/config';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
@@ -42,7 +45,6 @@ async function getRegionMap(cacheId: string) {
     regionMapUpdated < Date.now() - 3600 * 1000
   ) {
     if (!BACKEND_URL) {
-      // No backend URL set, use fallback
       regionMapCache.regionMap = getFallbackRegionMap()
       regionMapCache.regionMapUpdated = Date.now()
       return regionMapCache.regionMap
@@ -78,7 +80,6 @@ async function getRegionMap(cacheId: string) {
         regionMapCache.regionMap = nextMap
       }
     } catch (e) {
-      // On any failure, use fallback region
       regionMapCache.regionMap = getFallbackRegionMap()
     }
 
@@ -88,95 +89,92 @@ async function getRegionMap(cacheId: string) {
   return regionMapCache.regionMap
 }
 
-/**
- * Fetches regions from Medusa and sets the region cookie.
- * @param request
- * @param response
- */
-async function getCountryCode(
-  request: NextRequest,
-  regionMap: Map<string, HttpTypes.StoreRegion | number>
-) {
-  try {
-    let countryCode
-
-    const vercelCountryCode = request.headers
-      .get("x-vercel-ip-country")
-      ?.toLowerCase()
-
-    const urlCountryCode = request.nextUrl.pathname.split("/")[1]?.toLowerCase()
-
-    if (urlCountryCode && regionMap.has(urlCountryCode)) {
-      countryCode = urlCountryCode
-    } else if (vercelCountryCode && regionMap.has(vercelCountryCode)) {
-      countryCode = vercelCountryCode
-    } else if (regionMap.has(DEFAULT_REGION)) {
-      countryCode = DEFAULT_REGION
-    } else if (regionMap.keys().next().value) {
-      countryCode = regionMap.keys().next().value
-    }
-
-    return countryCode
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Middleware.ts: Error getting the country code")
-    }
-  }
-}
+// Create the next-intl middleware
+const intlMiddleware = createMiddleware(routing);
 
 /**
- * Middleware to handle region selection and onboarding status.
+ * Middleware to handle locale and region selection
  */
 export async function middleware(request: NextRequest) {
-  // Do not interfere with non-GET/HEAD requests (e.g., POST server actions)
+  // Handle non-GET/HEAD requests
   if (request.method !== "GET" && request.method !== "HEAD") {
     return NextResponse.next()
   }
 
-  let cacheIdCookie = request.cookies.get("_medusa_cache_id")
+  // Check if this is a static asset
+  const urlPath = request.nextUrl.pathname
+  if (urlPath.includes(".") || urlPath.startsWith("/_next")) {
+    return NextResponse.next()
+  }
 
+  // Get cache ID
+  let cacheIdCookie = request.cookies.get("_medusa_cache_id")
   let cacheId = cacheIdCookie?.value || crypto.randomUUID()
 
+  // Get region map
   const regionMap = await getRegionMap(cacheId)
 
-  const countryCode = regionMap && (await getCountryCode(request, regionMap))
+  // Extract locale from URL (first segment after /)
+  const segments = urlPath.split('/').filter(Boolean)
+  const locale = segments[0]
+  
+  // Determine expected country code based on locale
+  const expectedCountryCode = localeToCountryCode[locale as keyof typeof localeToCountryCode] || DEFAULT_REGION
 
-  const urlPath = request.nextUrl.pathname
-  const urlHasCountryCode = countryCode && urlPath.startsWith(`/${countryCode}`)
+  // Check if URL already has countryCode (second segment should be a valid country code)
+  // Valid country codes from the region map or known mappings
+  const validCountryCodes = new Set(['vn', 'us', 'jp', 'cn', 'gb', 'au', 'ca'])
+  const urlCountryCode = segments.length > 1 && validCountryCodes.has(segments[1]) ? segments[1] : null
 
-  // if one of the country codes is in the url and the cache id is set, return next
-  if (urlHasCountryCode && cacheIdCookie) {
-    return NextResponse.next()
+  // If URL has a country code that doesn't match the locale, redirect to correct one
+  if (urlCountryCode && urlCountryCode !== expectedCountryCode && routing.locales.includes(locale as any)) {
+    const restOfPath = segments.slice(2).join('/')
+    const newPath = `/${locale}/${expectedCountryCode}${restOfPath ? '/' + restOfPath : ''}`
+    const newUrl = request.nextUrl.clone()
+    newUrl.pathname = newPath
+    // Preserve query string
+    if (request.nextUrl.search) {
+      newUrl.search = request.nextUrl.search
+    }
+    return NextResponse.redirect(newUrl)
   }
 
-  // if one of the country codes is in the url and the cache id is not set, set the cache id and redirect
-  if (urlHasCountryCode && !cacheIdCookie) {
-    const response = NextResponse.next()
+  // If URL doesn't have countryCode and has a locale, rewrite it to include countryCode
+  if (!urlCountryCode && locale && routing.locales.includes(locale as any)) {
+    const restOfPath = segments.slice(1).join('/')
+    const newPath = `/${locale}/${expectedCountryCode}${restOfPath ? '/' + restOfPath : ''}`
+    const newUrl = request.nextUrl.clone()
+    newUrl.pathname = newPath
+    // Preserve query string
+    if (request.nextUrl.search) {
+      newUrl.search = request.nextUrl.search
+    }
+    return NextResponse.redirect(newUrl)
+  }
+
+  // Run next-intl middleware
+  const response = intlMiddleware(request)
+  
+  // Set Medusa-related cookies
+  if (response && !cacheIdCookie) {
     response.cookies.set("_medusa_cache_id", cacheId, {
       maxAge: 60 * 60 * 24,
+      path: '/',
     })
-    return response
   }
 
-  // check if the url is a static asset
-  if (urlPath.includes(".")) {
-    return NextResponse.next()
+  if (response && expectedCountryCode) {
+    response.cookies.set("_medusa_country_code", expectedCountryCode, {
+      maxAge: 60 * 60 * 24,
+      path: '/',
+    })
   }
 
-  const redirectPath = urlPath === "/" ? "" : urlPath
-  const queryString = request.nextUrl.search ? request.nextUrl.search : ""
-
-  // If no country code is set, we redirect to the relevant region.
-  if (!urlHasCountryCode && countryCode) {
-    const redirectUrl = `${request.nextUrl.origin}/${countryCode}${redirectPath}${queryString}`
-    return NextResponse.redirect(redirectUrl, 307)
-  }
-
-  return NextResponse.next()
+  return response || NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|images|assets|png|svg|jpg|jpeg|gif|webp).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|images|assets|.*\\.png|.*\\.svg|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.webp).*)",
   ],
 }

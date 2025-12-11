@@ -1,0 +1,59 @@
+#!/usr/bin/expect -f
+
+# Get Publishable API Key from Backend
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Getting Publishable API Key"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Get publishable API key from database
+puts "=== Fetching Publishable API Key ===\n"
+send "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -t -c \"SELECT token FROM api_key WHERE type='publishable' ORDER BY created_at DESC LIMIT 1;\" 2>/dev/null | tr -d ' ' || echo 'No key found'\r"
+expect -re "#|\\$"
+
+puts "\n=========================================\n"
+puts "Copy the key above and add it to:"
+puts "icfix-storefront/.env.local"
+puts "as: NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=<key>"
+puts ""
+
+# Close connection
+send "exit\r"
+expect eof
+

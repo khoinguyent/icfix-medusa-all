@@ -1,0 +1,66 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+set commit_hash "df27e02"
+set github_user "khoinguyent"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Checking Docker Image for Commit $commit_hash ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '1. Checking available image tags on GHCR...'\r"
+        expect "# "
+        send "docker pull ghcr.io/$github_user/icfix-backend:latest 2>&1 | head -20\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '2. Checking local Docker images...'\r"
+        expect "# "
+        send "docker images | grep 'ghcr.io/$github_user/icfix-backend' | head -5\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '3. Checking image details...'\r"
+        expect "# "
+        send "docker inspect ghcr.io/$github_user/icfix-backend:latest 2>/dev/null | jq -r '.[0].Created, .[0].RepoDigests[0]' 2>/dev/null | head -2 || echo 'Image not found locally'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '4. Checking if image with commit tag exists...'\r"
+        expect "# "
+        send "docker pull ghcr.io/$github_user/icfix-backend:$commit_hash 2>&1 | head -10 || echo 'Commit-tagged image not found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '5. Listing all available tags (if accessible)...'\r"
+        expect "# "
+        send "curl -s -H \"Authorization: Bearer \$(cat ~/.docker/config.json | jq -r '.auths.\"ghcr.io\".auth' | base64 -d | cut -d: -f2)\" https://ghcr.io/v2/$github_user/icfix-backend/tags/list 2>/dev/null | jq -r '.tags[]' | head -10 || echo 'Cannot list tags'\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

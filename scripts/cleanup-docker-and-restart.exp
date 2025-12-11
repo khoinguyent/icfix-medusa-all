@@ -1,0 +1,102 @@
+#!/usr/bin/expect -f
+
+set timeout 180
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Checking Disk Space ==='\r"
+        expect "# "
+        send "df -h /\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Cleaning Up Docker ==='\r"
+        expect "# "
+        send "docker system prune -af --volumes\r"
+        expect {
+            "Total reclaimed space:" {
+                send "echo 'Cleanup completed'\r"
+                exp_continue
+            }
+            "# " {
+                send "echo 'Cleanup done'\r"
+                exp_continue
+            }
+        }
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Stopping medusa-backend ==='\r"
+        expect "# "
+        send "docker-compose stop medusa-backend\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Pulling Latest Image ==='\r"
+        expect "# "
+        send "docker pull ghcr.io/khoinguyent/icfix-backend:latest\r"
+        expect {
+            "Downloaded" {
+                send "echo 'Image downloaded'\r"
+                exp_continue
+            }
+            "already up to date" {
+                send "echo 'Image already up to date'\r"
+                exp_continue
+            }
+            "no space left" {
+                send "echo 'ERROR: Still no space!'\r"
+                exp_continue
+            }
+            "# " {
+                send "echo 'Pull completed'\r"
+                exp_continue
+            }
+        }
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Starting medusa-backend ==='\r"
+        expect "# "
+        send "docker-compose up -d medusa-backend\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking Status ==='\r"
+        expect "# "
+        send "sleep 3\r"
+        expect "# "
+        send "docker-compose ps medusa-backend\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Recent Logs ==='\r"
+        expect "# "
+        send "docker-compose logs --tail=20 medusa-backend\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

@@ -1,6 +1,8 @@
+"use client"
+
 import { clx } from "@medusajs/ui"
 import Image from "next/image"
-import React from "react"
+import React, { useState } from "react"
 
 import PlaceholderImage from "@modules/common/icons/placeholder-image"
 
@@ -51,7 +53,17 @@ const ImageOrPlaceholder = ({
 }: Pick<ThumbnailProps, "size" | "type"> & {
   image?: string
 }) => {
-  return image ? (
+  const [imageError, setImageError] = useState(false)
+
+  if (!image || imageError) {
+    return (
+      <div className="w-full h-full absolute inset-0 flex items-center justify-center bg-neutral-100">
+        <PlaceholderImage size={size === "small" ? 16 : 24} />
+      </div>
+    )
+  }
+
+  return (
     <Image
       src={image}
       alt="Thumbnail"
@@ -63,11 +75,11 @@ const ImageOrPlaceholder = ({
       quality={50}
       sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
       fill
+      onError={() => {
+        console.error("Failed to load product image:", image)
+        setImageError(true)
+      }}
     />
-  ) : (
-    <div className="w-full h-full absolute inset-0 flex items-center justify-center">
-      <PlaceholderImage size={size === "small" ? 16 : 24} />
-    </div>
   )
 }
 

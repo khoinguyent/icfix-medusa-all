@@ -1,0 +1,61 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== Checking category in Store API ==='\r"
+        expect "# "
+        send "curl -s 'http://localhost:9000/store/product-categories?handle=ic-fix-face' | jq -r '.product_categories | length' || echo '0'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking all categories in Store API ==='\r"
+        expect "# "
+        send "curl -s 'http://localhost:9000/store/product-categories?limit=100' | jq -r '.product_categories[]?.handle' | head -10 || echo 'No categories found'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking category via Admin API (requires auth) ==='\r"
+        expect "# "
+        send "echo 'Note: This requires admin token, checking if we can query database...'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking database for category ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_user icfix_db -t -c \"SELECT handle, name, is_active, is_internal FROM product_category WHERE handle LIKE '%ic-fix%' OR name LIKE '%IC Fix Face%' LIMIT 5;\" 2>/dev/null || echo 'Database query failed'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo '=== Checking sales channel associations ==='\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U icfix_user icfix_db -t -c \"SELECT pc.handle, pc.name, COUNT(pcs.sales_channel_id) as channel_count FROM product_category pc LEFT JOIN product_category_sales_channel pcs ON pc.id = pcs.product_category_id WHERE pc.handle LIKE '%ic-fix%' OR pc.name LIKE '%IC Fix Face%' GROUP BY pc.id, pc.handle, pc.name LIMIT 5;\" 2>/dev/null || echo 'Query failed'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+

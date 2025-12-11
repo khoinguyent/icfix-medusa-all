@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Test Backend from GHCR
+  backend-ghcr-test:
+    image: ghcr.io/khoinguyent/icfix-backend:latest
+    platform: linux/amd64
+    container_name: icfix-backend-ghcr-test
+    ports:
+      - "9000:9000"  # Medusa API
+    environment:
+      # Database (use existing local postgres if available, or point to production)
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@host.docker.internal:5432/medusa_db}
+      
+      # Redis (use existing local redis if available)
+      - REDIS_URL=${REDIS_URL:-redis://host.docker.internal:6379}
+      
+      # Backend URL
+      - MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL:-http://localhost:9000}
+      - JWT_SECRET=${JWT_SECRET:-super_secret_jwt_secret}
+      - COOKIE_SECRET=${COOKIE_SECRET:-super_secret_cookie_secret}
+      
+      # File storage (R2/S3) - use environment variables if available
+      - R2_FILE_URL=${R2_FILE_URL:-}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-}
+      - R2_REGION=${R2_REGION:-auto}
+      - R2_BUCKET=${R2_BUCKET:-}
+      - R2_ENDPOINT=${R2_ENDPOINT:-}
+      
+      # Meilisearch (optional, for search)
+      - MEILISEARCH_HOST=${MEILISEARCH_HOST:-http://host.docker.internal:7700}
+      
+      # Revalidation (optional)
+      - REVALIDATE_ENDPOINT=${REVALIDATE_ENDPOINT:-}
+      - REVALIDATE_SECRET=${REVALIDATE_SECRET:-}
+    networks:
+      - test-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  test-network:
+    driver: bridge
+

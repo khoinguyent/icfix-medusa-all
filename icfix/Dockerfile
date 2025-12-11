@@ -5,31 +5,46 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install system dependencies including curl for health checks
-RUN apk add --no-cache \
-    netcat-openbsd \
-    curl \
-    wget
+# Install packages individually to avoid cross-platform build issues
+# Skip trigger scripts that cause issues in cross-platform builds
+RUN apk update && \
+    apk add --no-cache netcat-openbsd curl wget || \
+    (apk update && apk add --no-cache netcat-openbsd && \
+     apk add --no-cache curl && \
+     apk add --no-cache wget) && \
+    rm -rf /var/cache/apk/* || true
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies using npm (uses package-lock.json)
-RUN npm ci --only=production
+# Copy plugins directory first (needed for local file dependency in package.json)
+# This must be done before npm install since package.json references file:./plugins/...
+COPY plugins/ ./plugins/
+
+# Install ALL dependencies (including dev dependencies needed for build)
+# Use npm install with --legacy-peer-deps to handle peer dependency conflicts
+RUN npm install --legacy-peer-deps || (cat /root/.npm/_logs/* && exit 1)
 
 # Copy the rest of your app's source code
+# Note: plugins/ is already copied, but COPY . . will overwrite it (which is fine)
 COPY . .
 
-# Install plugin dependencies for all plugins with package.json
+# Install and build plugin dependencies for all plugins with package.json
 RUN echo "=== PLUGIN SETUP ===" && \
-    echo "Installing dependencies for all plugins..." && \
+    echo "Installing and building all plugins..." && \
     for plugin_dir in ./plugins/*/ ; do \
         if [ -f "${plugin_dir}package.json" ]; then \
             plugin_name=$(basename "$plugin_dir") && \
             echo "" && \
-            echo "Installing dependencies for: $plugin_name" && \
+            echo "Processing plugin: $plugin_name" && \
             cd "$plugin_dir" && \
-            npm install --only=production && \
+            npm install --legacy-peer-deps && \
             echo "✓ $plugin_name dependencies installed" && \
+            if grep -q '"build"' package.json; then \
+                echo "Building $plugin_name..." && \
+                npm run build && \
+                echo "✓ $plugin_name built successfully"; \
+            fi && \
             cd /app; \
         fi; \
     done && \
@@ -41,8 +56,18 @@ RUN echo "=== PLUGIN SETUP ===" && \
 # Make scripts executable
 RUN chmod +x /app/scripts/wait-for-db.sh
 
-# Build the project
-RUN npm run build
+# Build the project (requires dev dependencies)
+# Verify build output exists after build
+RUN npm run build && \
+    echo "=== Verifying build output ===" && \
+    ls -la .medusa/ 2>/dev/null || (echo "ERROR: .medusa directory not found after build!" && exit 1) && \
+    ls -la .medusa/server/ 2>/dev/null || (echo "ERROR: .medusa/server directory not found after build!" && exit 1) && \
+    echo "✓ Build output verified"
+
+# Remove dev dependencies after build to reduce image size
+# Use --legacy-peer-deps to handle peer dependency conflicts
+# Note: We keep all production dependencies including workflows SDK
+RUN npm prune --production --legacy-peer-deps || true
 
 # Create symlink from .medusa/server/plugins to main plugins directory
 # This allows Medusa to find plugins from the build directory
@@ -66,6 +91,27 @@ EXPOSE 9000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:9000/health || exit 1
 
-# The CMD is now handled by the command in your docker-compose.yml
-# This ensures it runs with the correct flags.
-CMD ["npx", "medusa", "start"]
+# After build, setup for production run
+# Instead of installing dependencies in .medusa/server (which creates version conflicts),
+# we'll use the parent node_modules with NODE_PATH
+
+# Copy medusa-config.ts to .medusa/server so it can be found
+RUN cp medusa-config.ts .medusa/server/medusa-config.ts && \
+    echo "✓ Copied medusa-config.ts to .medusa/server"
+
+# Create symlink from .medusa/server/node_modules to parent node_modules
+# This ensures all dependencies are accessible without version conflicts
+RUN ln -sf /app/node_modules /app/.medusa/server/node_modules && \
+    echo "✓ Created symlink: .medusa/server/node_modules -> /app/node_modules"
+
+# Change to .medusa/server for running the application
+WORKDIR /app/.medusa/server
+
+# Set NODE_ENV to production for production mode
+ENV NODE_ENV=production
+
+# Set NODE_PATH to include parent node_modules for module resolution
+ENV NODE_PATH=/app/node_modules:/app/.medusa/server/node_modules
+
+# Start Medusa from .medusa/server directory
+CMD ["npm", "start"]

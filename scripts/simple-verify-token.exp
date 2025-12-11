@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "echo '=== GitHub Token Verification ==='\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo 'Current token:'\r"
+        expect "# "
+        send "cat ~/.docker/config.json | jq -r '.auths.\"ghcr.io\".auth' | base64 -d\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo 'Checking if token is configured...'\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "echo 'Testing pull access...'\r"
+        expect "# "
+        send "docker pull ghcr.io/khoinguyent/icfix-backend:latest 2>&1 | tail -5\r"
+        expect "# "
+        send "echo ''\r"
+        expect "# "
+        send "docker images | grep 'ghcr.io/khoinguyent/icfix-backend' | head -1\r"
+        expect "# "
+        send "echo ''\r"
+        send "exit\r"
+    }
+    timeout {
+        puts "Connection timeout"
+        exit 1
+    }
+}
+
+expect eof
+
