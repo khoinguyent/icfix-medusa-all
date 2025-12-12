@@ -77,6 +77,12 @@ export const getHomepageContent = async (): Promise<HomepageContent> => {
     }
 
     try {
+      // Log for debugging (only in development or if explicitly enabled)
+      if (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEBUG_HOMEPAGE === "true") {
+        console.log("[Homepage] Fetching homepage content from:", sdk.baseUrl)
+        console.log("[Homepage] Publishable key present:", !!process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY)
+      }
+
       const response = await sdk.client.fetch<HomepageContent>(
         "/store/homepage-content",
         {
@@ -85,6 +91,15 @@ export const getHomepageContent = async (): Promise<HomepageContent> => {
         }
       )
 
+      if (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEBUG_HOMEPAGE === "true") {
+        console.log("[Homepage] Response received:", {
+          hero_banners: response?.hero_banners?.length || 0,
+          service_features: response?.service_features?.length || 0,
+          testimonials: response?.testimonials?.length || 0,
+          homepage_sections: response?.homepage_sections?.length || 0,
+        })
+      }
+
       return response || {
         hero_banners: [],
         homepage_sections: [],
@@ -92,7 +107,11 @@ export const getHomepageContent = async (): Promise<HomepageContent> => {
         testimonials: [],
       }
     } catch (error) {
-      console.warn("Could not fetch homepage content, returning empty:", error)
+      console.error("Could not fetch homepage content:", error)
+      if (error instanceof Error) {
+        console.error("Error message:", error.message)
+        console.error("Error stack:", error.stack)
+      }
       return {
         hero_banners: [],
         homepage_sections: [],
@@ -132,6 +151,10 @@ export const getHeroBanners = async (
     }
 
     try {
+      if (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEBUG_HOMEPAGE === "true") {
+        console.log(`[Banners] Fetching banners for position: ${position}`)
+      }
+
       const response = await sdk.client.fetch<{ banners: PromotionalBanner[] }>(
         "/store/banners",
         {
@@ -144,9 +167,16 @@ export const getHeroBanners = async (
         }
       )
 
+      if (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEBUG_HOMEPAGE === "true") {
+        console.log(`[Banners] Received ${response?.banners?.length || 0} banners for position ${position}`)
+      }
+
       return response?.banners || []
     } catch (error) {
-      console.warn(`Could not fetch banners for position ${position}, returning empty:`, error)
+      console.error(`Could not fetch banners for position ${position}:`, error)
+      if (error instanceof Error) {
+        console.error("Error details:", error.message)
+      }
       return []
     }
   } catch (error) {

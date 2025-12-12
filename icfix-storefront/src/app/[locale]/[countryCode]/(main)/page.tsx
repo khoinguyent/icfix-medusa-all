@@ -55,6 +55,16 @@ export default async function Home(props: {
   // Extract data
   const { service_features, testimonials, homepage_sections } = homepageContent
 
+  // Debug logging (only in development or if explicitly enabled)
+  if (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_DEBUG_HOMEPAGE === "true") {
+    console.log("[Homepage] Data summary:", {
+      heroBanners: heroBanners.length,
+      service_features: service_features.length,
+      testimonials: testimonials.length,
+      homepage_sections: homepage_sections.length,
+    })
+  }
+
   return (
     <div className="flex flex-col gap-y-0">
       {/* Hero Carousel - Dynamic banners from database */}
