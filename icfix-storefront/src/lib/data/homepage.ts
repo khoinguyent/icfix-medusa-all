@@ -66,6 +66,12 @@ export const getHomepageContent = async (): Promise<HomepageContent> => {
   try {
     const headers = {
       ...(await getAuthHeaders()),
+    } as Record<string, string>
+
+    // Add publishable API key header (required for store endpoints)
+    if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+      headers["x-publishable-api-key"] =
+        process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
     }
 
     const dynamicCacheOptions = await getCacheOptions("homepage")
@@ -140,6 +146,12 @@ export const getHeroBanners = async (
   try {
     const headers = {
       ...(await getAuthHeaders()),
+    } as Record<string, string>
+
+    // Add publishable API key header (required for store endpoints)
+    if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+      headers["x-publishable-api-key"] =
+        process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
     }
 
     const dynamicCacheOptions = await getCacheOptions("banners")
@@ -192,6 +204,12 @@ export const getHeroBanners = async (
 export const getServiceFeatures = async (): Promise<ServiceFeature[]> => {
   const headers = {
     ...(await getAuthHeaders()),
+  } as Record<string, string>
+
+  // Add publishable API key header (required for store endpoints)
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   const dynamicCacheOptions = await getCacheOptions("service-features")
@@ -224,6 +242,12 @@ export const getServiceFeatures = async (): Promise<ServiceFeature[]> => {
 export const getTestimonials = async (): Promise<Testimonial[]> => {
   const headers = {
     ...(await getAuthHeaders()),
+  } as Record<string, string>
+
+  // Add publishable API key header (required for store endpoints)
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   const dynamicCacheOptions = await getCacheOptions("testimonials")
@@ -256,6 +280,12 @@ export const getTestimonials = async (): Promise<Testimonial[]> => {
 export const getHomepageSections = async (): Promise<HomepageSection[]> => {
   const headers = {
     ...(await getAuthHeaders()),
+  } as Record<string, string>
+
+  // Add publishable API key header (required for store endpoints)
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
   }
 
   const dynamicCacheOptions = await getCacheOptions("homepage-sections")
