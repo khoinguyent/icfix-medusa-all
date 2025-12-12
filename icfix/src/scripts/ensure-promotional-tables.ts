@@ -1,5 +1,6 @@
 import { ExecArgs } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { EntityManager } from "@medusajs/framework/mikro-orm/knex"
 
 /**
  * Ensure promotional content tables exist
@@ -10,7 +11,7 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
  */
 export default async function ensurePromotionalTables({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
-  const manager = container.resolve(ContainerRegistrationKeys.MANAGER)
+  const manager = container.resolve<EntityManager>(ContainerRegistrationKeys.MANAGER)
 
   try {
     logger.info("Checking promotional content tables...")
@@ -89,9 +90,8 @@ export default async function ensurePromotionalTables({ container }: ExecArgs) {
       );
     `
 
-    await manager.transaction(async (transactionManager) => {
-      await transactionManager.query(createTablesSQL)
-    })
+    // Execute SQL directly - CREATE TABLE IF NOT EXISTS is idempotent
+    await manager.execute(createTablesSQL)
 
     logger.info("✅ Promotional content tables verified/created")
   } catch (error) {
