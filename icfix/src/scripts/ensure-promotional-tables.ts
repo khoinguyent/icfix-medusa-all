@@ -1,6 +1,6 @@
 import { ExecArgs } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import { EntityManager } from "@medusajs/framework/mikro-orm/knex"
+import { EntityManager } from "@mikro-orm/knex"
 
 /**
  * Ensure promotional content tables exist
