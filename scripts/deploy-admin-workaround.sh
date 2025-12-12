@@ -59,7 +59,7 @@ cat > .vercel/project.json << 'EOF'
 EOF
 
 echo "📤 Deploying from temporary directory..."
-vercel --prod --yes
+vercel --prod --yes --archive=tgz --archive=tgz
 
 # Cleanup
 echo ""
