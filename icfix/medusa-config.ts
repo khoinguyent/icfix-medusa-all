@@ -101,6 +101,9 @@ module.exports = defineConfig({
       authCors: process.env.AUTH_CORS!,
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
+      // Cookie domain for cross-domain authentication
+      // Leading dot allows cookies for subdomains (e.g., .icfix.vn works for admin.icfix.vn)
+      cookieDomain: process.env.COOKIE_DOMAIN || undefined,
     },
     databaseDriverOptions:{
       ssl: false,
