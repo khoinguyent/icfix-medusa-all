@@ -1,6 +1,6 @@
 {
-  "installCommand": "echo 'Using pre-built admin'",
-  "buildCommand": "echo 'Skipping build - using pre-built admin'",
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "npm run build:admin",
   "outputDirectory": "admin",
   "framework": null,
   "rewrites": [
