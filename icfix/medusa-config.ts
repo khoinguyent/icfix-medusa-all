@@ -101,9 +101,14 @@ module.exports = defineConfig({
       authCors: process.env.AUTH_CORS!,
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
-      // Cookie domain for cross-domain authentication
-      // Leading dot allows cookies for subdomains (e.g., .icfix.vn works for admin.icfix.vn)
-      cookieDomain: process.env.COOKIE_DOMAIN || undefined,
+    },
+    // Cookie options for cross-domain authentication
+    // This allows cookies to work between admin.icfix.vn and icfix.duckdns.org
+    cookieOptions: {
+      domain: process.env.COOKIE_DOMAIN || undefined, // e.g., ".icfix.vn" for subdomain sharing
+      sameSite: "lax" as const, // Allows cookies in cross-site requests
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production
+      httpOnly: true, // Prevents JavaScript access for security
     },
     databaseDriverOptions:{
       ssl: false,
