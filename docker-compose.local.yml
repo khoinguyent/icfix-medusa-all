@@ -1,6 +1,94 @@
 version: '3.8'
 
 services:
+  # Local PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: medusa-postgres-local
+    environment:
+      POSTGRES_DB: medusa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5439:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - medusa-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d medusa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Local Redis
+  redis:
+    image: redis:7-alpine
+    container_name: medusa-redis-local
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6378:6379"
+    networks:
+      - medusa-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # Local Meilisearch
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: medusa-meilisearch-local
+    environment:
+      MEILI_MASTER_KEY: masterKey
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - medusa-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7700/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Local Medusa Backend
+  medusa:
+    build:
+      context: ./icfix
+      dockerfile: Dockerfile
+    container_name: medusa-backend-local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    env_file:
+      - ./icfix/.env
+    environment:
+      # Override specific values for Docker networking
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/medusa
+      REDIS_URL: redis://redis:6379
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      # MeiliSearch configuration
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: masterKey
+    ports:
+      - "9002:9000"
+    networks:
+      - medusa-network
+    restart: unless-stopped
+
   # Local Admin UI - Serves pre-built static assets
   admin-local:
     image: nginx:alpine
@@ -13,6 +101,8 @@ services:
     networks:
       - medusa-network
     restart: unless-stopped
+    depends_on:
+      - medusa
 
   # Local Storefront - Next.js Production Server
   storefront-local:
@@ -20,7 +110,7 @@ services:
       context: ./icfix-storefront
       dockerfile: Dockerfile.local
       args:
-        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://icfix.duckdns.org
+        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9002
         - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-pk_43c3b3d995dbe3b2899bfffcb23355936e34f475e99e75e873c7b73349b78330}
         - NEXT_PUBLIC_DEFAULT_REGION=vn
     container_name: medusa-storefront-local
@@ -29,16 +119,21 @@ services:
     environment:
       - NODE_ENV=production
       - REVALIDATE_SECRET=${REVALIDATE_SECRET:-}
-      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://icfix.duckdns.org
+      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9002
       - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-pk_43c3b3d995dbe3b2899bfffcb23355936e34f475e99e75e873c7b73349b78330}
       - NEXT_PUBLIC_DEFAULT_REGION=vn
     networks:
       - medusa-network
     restart: unless-stopped
     depends_on:
+      - medusa
       - admin-local
 
 networks:
   medusa-network:
     driver: bridge
+
+volumes:
+  pgdata:
+  meilisearch_data:
 

@@ -87,6 +87,9 @@ module.exports = defineConfig({
         ],
       },
     },
+    {
+      resolve: "./src/modules/promotional-content",
+    },
   ],
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
