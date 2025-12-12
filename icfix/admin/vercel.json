@@ -1,8 +1,4 @@
 {
-  "installCommand": "echo 'Using pre-built admin'",
-  "buildCommand": "echo 'Skipping build - using pre-built admin'",
-  "outputDirectory": "admin",
-  "framework": null,
   "rewrites": [
     {
       "source": "/((?!assets).*)",
