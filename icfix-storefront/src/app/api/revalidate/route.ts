@@ -132,6 +132,119 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Promotional content events
+    if (
+      event === "promotional-banner.created" ||
+      event === "promotional-banner.updated" ||
+      event === "promotional-banner.deleted"
+    ) {
+      // Revalidate all promotional content cache tags
+      revalidateTag("homepage")
+      revalidateTag("promotional-content")
+      revalidateTag("banners")
+      
+      // Revalidate position-specific banner tags
+      if (body.position) {
+        revalidateTag(`banners:${body.position}`)
+      }
+      revalidateTag("banners:hero")
+      revalidateTag("banners:homepage")
+      
+      // Revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`homepage-${cacheId}`)
+        revalidateTag(`banners-${cacheId}`)
+      }
+      
+      // Revalidate homepage path
+      revalidatePath("/", "page")
+    }
+
+    if (
+      event === "service-feature.created" ||
+      event === "service-feature.updated" ||
+      event === "service-feature.deleted"
+    ) {
+      // Revalidate service features cache
+      revalidateTag("homepage")
+      revalidateTag("promotional-content")
+      revalidateTag("service-features")
+      
+      // Revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`homepage-${cacheId}`)
+        revalidateTag(`service-features-${cacheId}`)
+      }
+      
+      // Revalidate homepage path
+      revalidatePath("/", "page")
+    }
+
+    if (
+      event === "testimonial.created" ||
+      event === "testimonial.updated" ||
+      event === "testimonial.deleted"
+    ) {
+      // Revalidate testimonials cache
+      revalidateTag("homepage")
+      revalidateTag("promotional-content")
+      revalidateTag("testimonials")
+      
+      // Revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`homepage-${cacheId}`)
+        revalidateTag(`testimonials-${cacheId}`)
+      }
+      
+      // Revalidate homepage path
+      revalidatePath("/", "page")
+    }
+
+    if (
+      event === "homepage-section.created" ||
+      event === "homepage-section.updated" ||
+      event === "homepage-section.deleted"
+    ) {
+      // Revalidate homepage sections cache
+      revalidateTag("homepage")
+      revalidateTag("promotional-content")
+      revalidateTag("homepage-sections")
+      
+      // Revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`homepage-${cacheId}`)
+        revalidateTag(`homepage-sections-${cacheId}`)
+      }
+      
+      // Revalidate homepage path
+      revalidatePath("/", "page")
+    }
+
+    // Generic promotional content update event (for manual triggers)
+    if (event === "promotional-content.updated" || event === "promotional-content.revalidate") {
+      // Revalidate all promotional content
+      revalidateTag("homepage")
+      revalidateTag("promotional-content")
+      revalidateTag("banners")
+      revalidateTag("banners:hero")
+      revalidateTag("banners:homepage")
+      revalidateTag("service-features")
+      revalidateTag("testimonials")
+      revalidateTag("homepage-sections")
+      
+      // Revalidate dynamic tags if cacheId is available
+      if (cacheId !== "default") {
+        revalidateTag(`homepage-${cacheId}`)
+        revalidateTag(`banners-${cacheId}`)
+        revalidateTag(`service-features-${cacheId}`)
+        revalidateTag(`testimonials-${cacheId}`)
+        revalidateTag(`homepage-sections-${cacheId}`)
+      }
+      
+      // Revalidate homepage path
+      revalidatePath("/", "page")
+    }
+
     return NextResponse.json({ revalidated: true, now: Date.now(), cacheId })
   } catch (err) {
     return NextResponse.json({ message: "Error revalidating" }, { status: 500 })
