@@ -63,35 +63,46 @@ export interface HomepageContent {
  * Fetch all homepage content in one request
  */
 export const getHomepageContent = async (): Promise<HomepageContent> => {
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-
-  const dynamicCacheOptions = await getCacheOptions("homepage")
-  const dynamicTags = "tags" in dynamicCacheOptions ? dynamicCacheOptions.tags : []
-  const cacheTags = [...dynamicTags, "homepage", "promotional-content"]
-
-  const next = {
-    tags: cacheTags,
-  }
-
   try {
-    const response = await sdk.client.fetch<HomepageContent>(
-      "/store/homepage-content",
-      {
-        headers,
-        next,
-      }
-    )
+    const headers = {
+      ...(await getAuthHeaders()),
+    }
 
-    return response || {
-      hero_banners: [],
-      homepage_sections: [],
-      service_features: [],
-      testimonials: [],
+    const dynamicCacheOptions = await getCacheOptions("homepage")
+    const dynamicTags = "tags" in dynamicCacheOptions ? dynamicCacheOptions.tags : []
+    const cacheTags = [...dynamicTags, "homepage", "promotional-content"]
+
+    const next = {
+      tags: cacheTags,
+    }
+
+    try {
+      const response = await sdk.client.fetch<HomepageContent>(
+        "/store/homepage-content",
+        {
+          headers,
+          next,
+        }
+      )
+
+      return response || {
+        hero_banners: [],
+        homepage_sections: [],
+        service_features: [],
+        testimonials: [],
+      }
+    } catch (error) {
+      console.warn("Could not fetch homepage content, returning empty:", error)
+      return {
+        hero_banners: [],
+        homepage_sections: [],
+        service_features: [],
+        testimonials: [],
+      }
     }
   } catch (error) {
-    console.warn("Could not fetch homepage content, returning empty:", error)
+    // Handle errors in getAuthHeaders or getCacheOptions
+    console.error("Error in getHomepageContent setup:", error)
     return {
       hero_banners: [],
       homepage_sections: [],
@@ -107,34 +118,40 @@ export const getHomepageContent = async (): Promise<HomepageContent> => {
 export const getHeroBanners = async (
   position: string = "hero"
 ): Promise<PromotionalBanner[]> => {
-  const headers = {
-    ...(await getAuthHeaders()),
-  }
-
-  const dynamicCacheOptions = await getCacheOptions("banners")
-  const dynamicTags = "tags" in dynamicCacheOptions ? dynamicCacheOptions.tags : []
-  const cacheTags = [...dynamicTags, "banners", `banners:${position}`]
-
-  const next = {
-    tags: cacheTags,
-  }
-
   try {
-    const response = await sdk.client.fetch<{ banners: PromotionalBanner[] }>(
-      "/store/banners",
-      {
-        query: {
-          position,
-          is_active: "true",
-        },
-        headers,
-        next,
-      }
-    )
+    const headers = {
+      ...(await getAuthHeaders()),
+    }
 
-    return response?.banners || []
+    const dynamicCacheOptions = await getCacheOptions("banners")
+    const dynamicTags = "tags" in dynamicCacheOptions ? dynamicCacheOptions.tags : []
+    const cacheTags = [...dynamicTags, "banners", `banners:${position}`]
+
+    const next = {
+      tags: cacheTags,
+    }
+
+    try {
+      const response = await sdk.client.fetch<{ banners: PromotionalBanner[] }>(
+        "/store/banners",
+        {
+          query: {
+            position,
+            is_active: "true",
+          },
+          headers,
+          next,
+        }
+      )
+
+      return response?.banners || []
+    } catch (error) {
+      console.warn(`Could not fetch banners for position ${position}, returning empty:`, error)
+      return []
+    }
   } catch (error) {
-    console.warn(`Could not fetch banners for position ${position}, returning empty:`, error)
+    // Handle errors in getAuthHeaders or getCacheOptions
+    console.error(`Error in getHeroBanners setup for position ${position}:`, error)
     return []
   }
 }
