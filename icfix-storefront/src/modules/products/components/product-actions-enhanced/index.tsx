@@ -77,7 +77,7 @@ const ProductActionsEnhanced = ({
   const inStock = (selectedVariant?.inventory_quantity ?? 0) > 0
 
   // Initialize with first variant's options if available
-  React.useEffect(() => {
+  useEffect(() => {
     if (product.variants && product.variants.length > 0 && Object.keys(selectedOptions).length === 0) {
       const firstVariant = product.variants[0]
       if (firstVariant.options) {
