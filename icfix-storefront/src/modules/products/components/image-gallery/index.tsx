@@ -1,10 +1,9 @@
 "use client"
 
-import { ArrowLeftMini, ArrowRightMini } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { clx, IconButton } from "@medusajs/ui"
+import { clx } from "@medusajs/ui"
 import Image from "next/image"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 type ImageGalleryProps = {
   product: HttpTypes.StoreProduct
@@ -22,115 +21,77 @@ const ImageGallery = ({ product }: ImageGalleryProps) => {
   )
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
-  const handleArrowClick = useCallback(
-    (direction: "left" | "right") => {
-      if (
-        images.length === 0 ||
-        (selectedImageIndex === 0 && direction === "left") ||
-        (selectedImageIndex === images.length - 1 && direction === "right")
-      ) {
-        return
-      }
-
-      if (direction === "left") {
-        setSelectedImageIndex((prev) => prev - 1)
-        setSelectedImage(images[selectedImageIndex - 1])
-      } else {
-        setSelectedImageIndex((prev) => prev + 1)
-        setSelectedImage(images[selectedImageIndex + 1])
-      }
-    },
-    [images, selectedImageIndex]
-  )
-
   const handleImageClick = useCallback(
-    (image: HttpTypes.StoreProductImage) => {
+    (image: HttpTypes.StoreProductImage, index: number) => {
       setSelectedImage(image)
-      setSelectedImageIndex(images.findIndex((img) => img.id === image.id))
+      setSelectedImageIndex(index)
     },
-    [images]
+    []
   )
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement instanceof HTMLInputElement) {
-        return
-      }
-
-      if (e.key === "ArrowLeft") {
-        handleArrowClick("left")
-      } else if (e.key === "ArrowRight") {
-        handleArrowClick("right")
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [handleArrowClick])
 
   return (
-    <div className="flex flex-col justify-end items-center bg-neutral-100 p-8 pt-0 gap-6 w-full h-full">
-      <div
-        className="relative aspect-[29/34] w-full overflow-hidden"
-        id={selectedImage.id}
-      >
-        <div className="flex p-48">
-          {!!selectedImage.url && (
+    <div className="flex flex-col gap-4 w-full">
+      {/* Main Image */}
+      <div className="relative w-full aspect-square bg-neutral-50 rounded-lg overflow-hidden group">
+        {!!selectedImage.url && (
+          <>
             <Image
               src={selectedImage.url}
               priority
-              className="absolute inset-0 rounded-rounded p-20 overflow-visible object-contain"
-              alt={(selectedImage.metadata?.alt as string) || ""}
+              alt={(selectedImage.metadata?.alt as string) || product.title || "Product image"}
               fill
-              sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
+              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 50vw"
             />
-          )}
-        </div>
-      </div>
-      <div className="flex small:flex-row flex-col-reverse gap-y-3 justify-between w-full">
-        {images.length > 1 && (
-          <div className="flex flex-row gap-x-2 self-end small:self-auto">
-            <IconButton
-              disabled={selectedImageIndex === 0}
-              className="rounded-full items-center justify-center"
-              onClick={() => handleArrowClick("left")}
+            {/* Fullscreen icon (top right) */}
+            <button
+              className="absolute top-4 right-4 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              aria-label="View fullscreen"
             >
-              <ArrowLeftMini />
-            </IconButton>
-            <IconButton
-              disabled={selectedImageIndex === images.length - 1}
-              className="rounded-full items-center justify-center"
-              onClick={() => handleArrowClick("right")}
-            >
-              <ArrowRightMini />
-            </IconButton>
-          </div>
+              <svg
+                className="w-5 h-5 text-gray-700"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                />
+              </svg>
+            </button>
+          </>
         )}
-        <ul className="flex flex-row gap-x-4 overflow-x-auto">
+      </div>
+
+      {/* Thumbnails */}
+      {images.length > 1 && (
+        <div className="flex gap-2 justify-start">
           {images.map((image, index) => (
-            <li
+            <button
               key={image.id}
-              className="flex aspect-[1/1] w-8 h-8 rounded-rounded"
-              onClick={() => handleImageClick(image)}
-              role="button"
+              onClick={() => handleImageClick(image, index)}
+              className={clx(
+                "relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all",
+                index === selectedImageIndex
+                  ? "border-blue-600 ring-2 ring-blue-200"
+                  : "border-transparent hover:border-gray-300"
+              )}
+              aria-label={`View image ${index + 1}`}
             >
               <Image
                 src={image.url}
-                alt={(image.metadata?.alt as string) || ""}
-                height={32}
-                width={32}
-                className={clx(
-                  index === selectedImageIndex ? "opacity-100" : "opacity-40",
-                  "hover:opacity-100 object-contain"
-                )}
+                alt={(image.metadata?.alt as string) || `Product thumbnail ${index + 1}`}
+                fill
+                className="object-cover"
+                sizes="80px"
               />
-            </li>
+            </button>
           ))}
-        </ul>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
