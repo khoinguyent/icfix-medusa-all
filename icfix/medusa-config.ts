@@ -10,7 +10,7 @@ module.exports = defineConfig({
   admin: {
     disable: true, // Disabled for backend server (admin built separately on Vercel)
     path: "/", // Admin path for router basename (must match Cloudflare Pages root deployment)
-    backendUrl: process.env.VITE_ADMIN_BACKEND_URL || process.env.MEDUSA_BACKEND_URL || "https://api.icfix.vn",
+    backendUrl: process.env.vite_backend_url || "https://api.icfix.vn",
     // @ts-ignore
     vite: (config) => {
       // Vite config for admin build (used when --admin-only flag is used)
@@ -94,7 +94,7 @@ module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,
-    
+
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
@@ -110,7 +110,7 @@ module.exports = defineConfig({
       secure: process.env.NODE_ENV === "production", // HTTPS only in production
       httpOnly: true, // Prevents JavaScript access for security
     },
-    databaseDriverOptions:{
+    databaseDriverOptions: {
       ssl: false,
       sslmode: "disable",
     },
