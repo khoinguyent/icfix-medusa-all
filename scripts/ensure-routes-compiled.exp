@@ -1,0 +1,53 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Ensuring routes are properly compiled..."
+
+# 1. Check if routes are compiled
+puts "1. Checking compiled routes..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend ls -la /app/.medusa/server/src/api/admin/promotional-content/banners/route.js 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. If not compiled, try to compile just the routes
+puts "\n2. Attempting to compile routes..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend sh -c 'cd /app && npx medusa build 2>&1 | tail -20'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. If build fails, check if routes work without compilation (Medusa v2 might load TS directly)
+puts "\n3. Testing if routes work without compilation..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker restart icfix-backend && sleep 20 && docker exec icfix-backend curl -s http://localhost:9000/admin/promotional-content/banners -w '\nHTTP: %{http_code}\n' 2>&1 | tail -3"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\nIf you see 401, routes are working (authentication required)"
+puts "If you see 404, routes need to be compiled or registered differently"

@@ -1,0 +1,30 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+# Try using medusa exec with the built path or check the config
+puts "Executing seed-promotional-content script on backend server..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend sh -c 'cd /app && ls -la medusa-config.ts && npx medusa exec ./src/scripts/seed-promotional-content.ts'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    "Permission denied" {
+        puts "ERROR: Authentication failed"
+        exit 1
+    }
+    timeout {
+        puts "ERROR: Command timed out"
+        exit 1
+    }
+    eof {
+        catch wait result
+        set exit_code [lindex $result 3]
+        exit $exit_code
+    }
+}

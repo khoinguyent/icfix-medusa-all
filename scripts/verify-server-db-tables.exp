@@ -1,0 +1,149 @@
+#!/usr/bin/expect -f
+
+# Script to verify promotional content tables on backend server database
+# Uses expect to handle SSH password authentication
+
+set SERVER_IP "116.118.48.209"
+set SERVER_USER "root"
+set SERVER_PASS "46532@Nvc"
+set timeout 30
+
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "🔍 Verifying Promotional Content Tables on Server Database"
+puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+puts "📡 Server: $SERVER_USER@$SERVER_IP"
+puts ""
+
+# Start SSH connection
+spawn ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP
+
+expect {
+    "password:" {
+        send "$SERVER_PASS\r"
+        expect {
+            "#" {
+                puts "\n✅ Connected to server\n"
+                
+                # Check if icfix-postgres container exists
+                puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                puts "Checking Docker containers..."
+                send "docker ps | grep icfix-postgres\r"
+                expect "#"
+                
+                # Use postgres user and icfix_db database (default for server)
+                puts "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                puts "Using database: icfix_db, user: postgres"
+                puts ""
+                
+                # List promotional content tables
+                puts "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                puts "📋 Listing promotional content tables..."
+                send "docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\dt\" | grep -E \"(promotional_banner|service_feature|testimonial|homepage_section|List of relations)\"\r"
+                expect "#"
+                
+                # Check each table
+                puts "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                puts "✅ Checking Promotional Content Tables:"
+                puts ""
+                
+                # 1. promotional_banner
+                puts "1️⃣  promotional_banner:"
+                send "docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\d promotional_banner\" > /dev/null 2>&1 && echo \"EXISTS\" || echo \"MISSING\"\r"
+                expect {
+                    "EXISTS" {
+                        puts "   ✓ Table exists"
+                        send "docker exec icfix-postgres psql -U postgres -d icfix_db -t -c \"SELECT COUNT(*) FROM promotional_banner;\" | xargs\r"
+                        expect "#"
+                        puts "   📐 Structure:"
+                        send "docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\d promotional_banner\" | head -20\r"
+                        expect "#"
+                    }
+                    "MISSING" {
+                        puts "   ❌ Table does NOT exist"
+                    }
+                }
+                puts ""
+                
+                # 2. service_feature
+                puts "2️⃣  service_feature:"
+                send "docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\d service_feature\" > /dev/null 2>&1 && echo \"EXISTS\" || echo \"MISSING\"\r"
+                expect {
+                    "EXISTS" {
+                        puts "   ✓ Table exists"
+                        send "docker exec icfix-postgres psql -U postgres -d icfix_db -t -c \"SELECT COUNT(*) FROM service_feature;\" | xargs\r"
+                        expect "#"
+                        puts "   📐 Structure:"
+                        send "docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\d service_feature\" | head -15\r"
+                        expect "#"
+                    }
+                    "MISSING" {
+                        puts "   ❌ Table does NOT exist"
+                    }
+                }
+                puts ""
+                
+                # 3. testimonial
+                puts "3️⃣  testimonial:"
+                send "docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\d testimonial\" > /dev/null 2>&1 && echo \"EXISTS\" || echo \"MISSING\"\r"
+                expect {
+                    "EXISTS" {
+                        puts "   ✓ Table exists"
+                        send "docker exec icfix-postgres psql -U postgres -d icfix_db -t -c \"SELECT COUNT(*) FROM testimonial;\" | xargs\r"
+                        expect "#"
+                        puts "   📐 Structure:"
+                        send "docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\d testimonial\" | head -15\r"
+                        expect "#"
+                    }
+                    "MISSING" {
+                        puts "   ❌ Table does NOT exist"
+                    }
+                }
+                puts ""
+                
+                # 4. homepage_section
+                puts "4️⃣  homepage_section:"
+                send "docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\d homepage_section\" > /dev/null 2>&1 && echo \"EXISTS\" || echo \"MISSING\"\r"
+                expect {
+                    "EXISTS" {
+                        puts "   ✓ Table exists"
+                        send "docker exec icfix-postgres psql -U postgres -d icfix_db -t -c \"SELECT COUNT(*) FROM homepage_section;\" | xargs\r"
+                        expect "#"
+                        puts "   📐 Structure:"
+                        send "docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\d homepage_section\" | head -15\r"
+                        expect "#"
+                    }
+                    "MISSING" {
+                        puts "   ❌ Table does NOT exist"
+                    }
+                }
+                puts ""
+                
+                # Final summary
+                puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                puts "📝 Summary:"
+                puts ""
+                send "for tbl in promotional_banner service_feature testimonial homepage_section; do docker exec icfix-postgres psql -U postgres -d icfix_db -c \"\\d \$tbl\" > /dev/null 2>&1 && echo \"   ✅ \$tbl - EXISTS\" || echo \"   ❌ \$tbl - MISSING\"; done\r"
+                expect "#"
+                
+                puts ""
+                puts "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                
+                # Exit
+                send "exit\r"
+                expect eof
+            }
+            timeout {
+                puts "\n❌ Connection timeout"
+                exit 1
+            }
+        }
+    }
+    timeout {
+        puts "\n❌ Connection timeout"
+        exit 1
+    }
+    eof {
+        puts "\n❌ Connection failed"
+        exit 1
+    }
+}

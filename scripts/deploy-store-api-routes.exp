@@ -1,0 +1,84 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Deploying Store API Routes to Backend"
+puts "==========================================\n"
+
+# 1. Copy compiled routes to server
+puts "1. Copying compiled store API routes to server..."
+spawn scp -o StrictHostKeyChecking=no /tmp/store-api-routes-compiled.tar.gz ${server_user}@${server_ip}:/tmp/
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Extract into container
+puts "\n2. Extracting routes into container..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend mkdir -p /app/.medusa/server/src/api/store && docker cp /tmp/store-api-routes-compiled.tar.gz icfix-backend:/tmp/ && docker exec icfix-backend tar -xzf /tmp/store-api-routes-compiled.tar.gz -C /app/.medusa/server/src/api/store && echo 'Routes extracted successfully'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Verify routes exist
+puts "\n3. Verifying routes are in place..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend ls -la /app/.medusa/server/src/api/store/homepage-content/route.js /app/.medusa/server/src/api/store/banners/route.js 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Restart backend
+puts "\n4. Restarting backend to load routes..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker restart icfix-backend && sleep 20 && echo 'Backend restarted'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 5. Test endpoints
+puts "\n5. Testing store API endpoints..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "PUB_KEY=\$(docker exec icfix-postgres psql -U icfix_admin -d icfix_db -t -A -c \"SELECT token FROM api_key WHERE type='publishable' ORDER BY created_at DESC LIMIT 1;\" 2>&1) && sleep 5 && curl -s -H \"x-publishable-api-key: \$PUB_KEY\" https://icfix.duckdns.org/store/homepage-content 2>&1 | head -50"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Deployment Complete"
+puts "=========================================="

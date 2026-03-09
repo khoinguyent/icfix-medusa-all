@@ -1,0 +1,140 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Checking Admin Backend Connection Issues"
+puts "==========================================\n"
+
+# 1. Check if backend container is running
+puts "1. Checking if backend container is running..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker ps | grep icfix-backend"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Check backend container logs for errors
+puts "\n2. Checking backend container logs (last 20 lines)..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker logs icfix-backend --tail 20 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Check if backend is listening on port 9000
+puts "\n3. Checking if backend is listening on port 9000..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend netstat -tlnp 2>/dev/null | grep 9000 || docker exec icfix-backend ss -tlnp 2>/dev/null | grep 9000 || echo 'Port check failed'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Test backend from inside container
+puts "\n4. Testing backend health from inside container..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend curl -s http://localhost:9000/health 2>&1 | head -5"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 5. Check nginx status
+puts "\n5. Checking nginx status..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "systemctl status nginx 2>&1 | head -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 6. Check nginx configuration for icfix.duckdns.org
+puts "\n6. Checking nginx configuration for icfix.duckdns.org..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "nginx -t 2>&1 && grep -r 'icfix.duckdns.org' /etc/nginx/ 2>/dev/null | head -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 7. Test backend from server (through nginx)
+puts "\n7. Testing backend through nginx from server..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\n' https://icfix.duckdns.org/health 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 8. Test admin endpoints
+puts "\n8. Testing admin endpoints..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\n' https://icfix.duckdns.org/admin/users/me 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 9. Check firewall/iptables
+puts "\n9. Checking firewall rules for port 443..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "iptables -L -n | grep 443 || ufw status | grep 443 || echo 'Firewall check completed'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Diagnosis Complete"
+puts "=========================================="

@@ -1,0 +1,57 @@
+#!/usr/bin/expect -f
+
+# Upload and execute script to fix duplicate OPTIONS handler
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+# Upload script
+spawn scp -o StrictHostKeyChecking=no scripts/fix-duplicate-options.sh root@116.118.48.209:/root/icfix-medusa/
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+    }
+    "100%" {
+        sleep 1
+    }
+    eof {}
+}
+
+# Execute
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        send "chmod +x fix-duplicate-options.sh\r"
+        expect "# "
+        send "./fix-duplicate-options.sh\r"
+        expect "# "
+        send "docker exec icfix-nginx nginx -t\r"
+        expect "# "
+        send "docker exec icfix-nginx nginx -s reload\r"
+        expect "# "
+        send "curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' https://icfix.duckdns.org/admin/feature-flags 2>&1 | head -10\r"
+        expect "# "
+        send "exit\r"
+    }
+}
+
+expect eof
+

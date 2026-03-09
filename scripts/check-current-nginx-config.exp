@@ -1,0 +1,87 @@
+#!/usr/bin/expect -f
+
+# Check current nginx configuration to understand the setup
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 60
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Checking Current Nginx Configuration"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+# Navigate to project directory
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Check nginx container
+puts "\n=== Nginx Container Status ===\n"
+send "docker ps | grep nginx\r"
+expect -re "#|\\$"
+
+# Check nginx configuration files
+puts "\n=== Nginx Configuration Files ===\n"
+send "ls -la nginx/conf.d/ 2>/dev/null || echo 'No nginx/conf.d directory'\r"
+expect -re "#|\\$"
+
+# Check current nginx config
+puts "\n=== Current Nginx Configuration ===\n"
+send "docker exec icfix-nginx cat /etc/nginx/conf.d/medusa.conf 2>/dev/null || docker exec icfix-nginx cat /etc/nginx/conf.d/default.conf 2>/dev/null || echo 'No config file found'\r"
+expect -re "#|\\$"
+
+# Check existing certificates
+puts "\n=== Existing SSL Certificates ===\n"
+send "ls -la ./letsencrypt/live/ 2>/dev/null || echo 'No certificates directory'\r"
+expect -re "#|\\$"
+
+# Check if icfix.duckdns.org certificate exists
+puts "\n=== icfix.duckdns.org Certificate ===\n"
+send "ls -la ./letsencrypt/live/icfix.duckdns.org/ 2>/dev/null && echo '✅ Certificate exists' || echo '❌ Certificate not found'\r"
+expect -re "#|\\$"
+
+# Check if api.icfix.vn certificate exists
+puts "\n=== api.icfix.vn Certificate ===\n"
+send "ls -la ./letsencrypt/live/api.icfix.vn/ 2>/dev/null && echo '✅ Certificate exists' || echo '❌ Certificate not found'\r"
+expect -re "#|\\$"
+
+# Check docker-compose to see volume mounts
+puts "\n=== Docker Compose Nginx Service ===\n"
+send "grep -A 15 'nginx:' docker-compose-prod.yml | head -20\r"
+expect -re "#|\\$"
+
+puts "\n=========================================\n"
+
+# Close connection
+send "exit\r"
+expect eof
+
+

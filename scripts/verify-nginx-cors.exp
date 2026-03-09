@@ -1,0 +1,72 @@
+#!/usr/bin/expect -f
+
+# Verify Nginx CORS configuration
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        
+        # Show OPTIONS handler block
+        send "echo '=== OPTIONS Preflight Handler ==='\r"
+        expect "# "
+        send "grep -A 12 'Handle OPTIONS preflight requests directly' nginx/conf.d/medusa.conf || echo 'OPTIONS handler not found'\r"
+        expect "# "
+        
+        # Show CORS headers in location block
+        send "echo '=== CORS Headers in Location Block ==='\r"
+        expect "# "
+        send "grep -A 10 'Hide CORS headers from backend' nginx/conf.d/medusa.conf || echo 'CORS headers section not found'\r"
+        expect "# "
+        
+        # Check for duplicate CORS headers
+        send "echo '=== Checking for Duplicate CORS Headers ==='\r"
+        expect "# "
+        send "grep -c 'add_header Access-Control-Allow-Origin' nginx/conf.d/medusa.conf | xargs -I {} echo 'Found {} Access-Control-Allow-Origin headers (should be 2: one in OPTIONS block, one in location block)'\r"
+        expect "# "
+        
+        # Test OPTIONS preflight
+        send "echo '=== Test 1: OPTIONS Preflight (should return 204 with CORS headers) ==='\r"
+        expect "# "
+        send "curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' -H 'Access-Control-Request-Method: GET' https://icfix.duckdns.org/admin/feature-flags 2>&1 | head -12\r"
+        expect "# "
+        
+        # Test GET request
+        send "echo '=== Test 2: GET Request (should return 200 with CORS headers) ==='\r"
+        expect "# "
+        send "curl -s -i -X GET -H 'Origin: https://admin.icfix.vn' https://icfix.duckdns.org/health 2>&1 | grep -iE '(HTTP|access-control-allow-origin)' | head -5\r"
+        expect "# "
+        
+        # Verify no duplicate headers in response
+        send "echo '=== Test 3: Check for Duplicate Headers in Response ==='\r"
+        expect "# "
+        send "CORS_COUNT=$(curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' https://icfix.duckdns.org/admin/feature-flags 2>&1 | grep -ic 'access-control-allow-origin'); if [ \"$CORS_COUNT\" -eq 1 ]; then echo '✅ Single CORS header (correct)'; else echo '❌ Found $CORS_COUNT CORS headers (should be 1)'; fi\r"
+        expect "# "
+        
+        # Show full nginx config section
+        send "echo '=== Full CORS Configuration Section ==='\r"
+        expect "# "
+        send "sed -n '/Handle OPTIONS/,/location \//p' nginx/conf.d/medusa.conf | head -20\r"
+        expect "# "
+        
+        send "exit\r"
+    }
+}
+
+expect eof
+

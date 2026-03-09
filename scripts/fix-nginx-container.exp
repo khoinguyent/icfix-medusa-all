@@ -1,0 +1,84 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Fixing Nginx Container Issues"
+puts "==========================================\n"
+
+# 1. Check nginx container logs
+puts "1. Checking nginx container logs (last 30 lines)..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker logs icfix-nginx --tail 30 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Check nginx configuration files
+puts "\n2. Checking nginx configuration files..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-nginx nginx -t 2>&1 || echo 'Container not accessible'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Check mounted volumes/config
+puts "\n3. Checking nginx container configuration..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker inspect icfix-nginx | grep -A 10 'Mounts'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Check docker-compose.yml for nginx config
+puts "\n4. Checking docker-compose.yml for nginx configuration..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "cat /root/icfix-medusa/docker-compose.yml | grep -A 20 'nginx'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 5. Check if nginx config directory exists
+puts "\n5. Checking for nginx config directory..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "ls -la /root/icfix-medusa/nginx* 2>/dev/null || find /root/icfix-medusa -name '*nginx*' -type d 2>/dev/null"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Diagnosis Complete"
+puts "=========================================="

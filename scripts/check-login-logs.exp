@@ -1,0 +1,98 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Checking Backend Logs for Login Issues"
+puts "==========================================\n"
+
+# 1. Check recent authentication attempts
+puts "1. Recent authentication/login attempts..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker logs icfix-backend --tail 100 2>&1 | grep -iE '(auth|login|user|401|unauthorized|password)' | tail -20"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Check for errors
+puts "\n2. Recent errors in logs..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker logs icfix-backend --tail 100 2>&1 | grep -iE '(error|fail|exception)' | tail -15"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Check HTTP requests to /admin/users/me
+puts "\n3. Recent requests to /admin/users/me..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker logs icfix-backend --tail 200 2>&1 | grep '/admin/users/me' | tail -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Check authentication endpoint requests
+puts "\n4. Recent authentication endpoint requests..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker logs icfix-backend --tail 200 2>&1 | grep -iE '/admin/auth' | tail -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 5. Verify user exists in database
+puts "\n5. Verifying user exists in database..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT email FROM auth_user WHERE email='admin@icfix.vn' LIMIT 1;\" 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 6. Check all HTTP requests with 401 status
+puts "\n6. All recent 401 Unauthorized responses..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker logs icfix-backend --tail 200 2>&1 | grep '\"status\":401' | tail -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Log Analysis Complete"
+puts "=========================================="

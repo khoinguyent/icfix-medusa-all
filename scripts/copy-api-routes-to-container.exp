@@ -1,0 +1,112 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Copying API Routes to Backend Container"
+puts "==========================================\n"
+
+# 1. Create the directory structure in container
+puts "1. Creating directory structure..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend mkdir -p /app/src/api/admin/promotional-content/banners /app/src/api/admin/promotional-content/service-features /app/src/api/admin/promotional-content/testimonials /app/src/api/admin/promotional-content/homepage-sections /app/src/api/admin/promotional-content/banners/\[id\] /app/src/api/admin/promotional-content/service-features/\[id\] /app/src/api/admin/promotional-content/testimonials/\[id\] /app/src/api/admin/promotional-content/homepage-sections/\[id\] 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Copy route files from local to server, then to container
+puts "\n2. Copying route files to server..."
+spawn scp -o StrictHostKeyChecking=no -r /Users/123khongbiet/Documents/medusa/icfix/src/api/admin/promotional-content ${server_user}@${server_ip}:/tmp/promotional-content-api
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Copy from server to container
+puts "\n3. Copying files into container..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker cp /tmp/promotional-content-api/. icfix-backend:/app/src/api/admin/promotional-content/ && echo 'Files copied successfully'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Install TypeScript for build
+puts "\n4. Installing TypeScript for build..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend npm install --save-dev typescript 2>&1 | tail -5"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 5. Rebuild
+puts "\n5. Rebuilding backend..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend npm run build 2>&1 | tail -15"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 6. Restart
+puts "\n6. Restarting backend..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker restart icfix-backend && sleep 15 && echo 'Backend restarted'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 7. Test endpoint
+puts "\n7. Testing API endpoint..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "sleep 5 && docker exec icfix-backend curl -s http://localhost:9000/admin/promotional-content/banners -w '\nHTTP Status: %{http_code}\n' 2>&1 | tail -3"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Fix Complete"
+puts "=========================================="

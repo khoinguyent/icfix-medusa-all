@@ -1,0 +1,73 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Checking Storefront Error Diagnostics"
+puts "==========================================\n"
+
+puts "This script helps diagnose the storefront error."
+puts "The error digest is: 267665226"
+puts "\nCommon causes:"
+puts "1. NEXT_PUBLIC_MEDUSA_BACKEND_URL not set in Vercel"
+puts "2. Backend API endpoints not accessible"
+puts "3. Missing NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY"
+puts "4. Network/CORS issues"
+puts "\n"
+
+puts "To check Vercel logs:"
+puts "1. Go to: https://vercel.com/dashboard"
+puts "2. Select project: icfix-medusa-storefront"
+puts "3. Go to: Deployments → Latest → Functions → View Function Logs"
+puts "4. Look for errors related to:"
+puts "   - /store/homepage-content"
+puts "   - /store/banners"
+puts "   - sdk.client.fetch"
+puts "   - Digest: 267665226"
+puts "\n"
+
+puts "To check Vercel environment variables:"
+puts "1. Go to: Project Settings → Environment Variables"
+puts "2. Verify these are set:"
+puts "   - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://icfix.duckdns.org"
+puts "   - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=<your-key>"
+puts "   - NEXT_PUBLIC_DEFAULT_REGION=vn"
+puts "\n"
+
+puts "Testing backend API from server..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\n' https://icfix.duckdns.org/store/homepage-content 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\nTesting banners endpoint..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "curl -s -o /dev/null -w 'HTTP Status: %{http_code}\n' 'https://icfix.duckdns.org/store/banners?position=hero&is_active=true' 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Next Steps:"
+puts "=========================================="
+puts "1. Check Vercel logs (see instructions above)"
+puts "2. Verify environment variables in Vercel"
+puts "3. Test backend API endpoints are accessible"
+puts "4. Check if backend is running and healthy"
+puts "=========================================="

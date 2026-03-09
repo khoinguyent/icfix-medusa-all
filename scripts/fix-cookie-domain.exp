@@ -1,0 +1,56 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Fixing cookie domain configuration..."
+
+# 1. Find project directory
+puts "1. Finding project directory..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "find /root /home /opt -name 'medusa-config.ts' -path '*/icfix/medusa-config.ts' 2>/dev/null | head -1 | xargs dirname | xargs dirname"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Add COOKIE_DOMAIN to .env
+puts "\n2. Adding COOKIE_DOMAIN to backend .env..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend sh -c 'grep -q COOKIE_DOMAIN /app/.env || echo \"COOKIE_DOMAIN=.icfix.vn\" >> /app/.env && cat /app/.env | grep COOKIE_DOMAIN'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Check if medusa-config.ts has cookieDomain
+puts "\n3. Checking medusa-config.ts..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend grep -A 2 'cookieSecret' /app/medusa-config.ts | head -5"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\nNote: Backend container needs to be rebuilt with updated medusa-config.ts"
+puts "The code change has been committed. You need to:"
+puts "1. Pull latest code on server"
+puts "2. Rebuild Docker image or restart with new code"
+puts "3. Set COOKIE_DOMAIN=.icfix.vn in .env"

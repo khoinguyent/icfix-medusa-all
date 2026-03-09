@@ -1,0 +1,70 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Checking Promotional Content Data"
+puts "==========================================\n"
+
+# Check banners
+puts "1. Checking active banners..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT id, title, position, is_active FROM promotional_banner WHERE is_active = true ORDER BY display_order LIMIT 5;\" 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check service features
+puts "\n2. Checking active service features..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT id, title, is_active FROM service_feature WHERE is_active = true ORDER BY display_order LIMIT 5;\" 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check testimonials
+puts "\n3. Checking active testimonials..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT id, customer_name, rating, is_active FROM testimonial WHERE is_active = true ORDER BY display_order LIMIT 5;\" 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Count totals
+puts "\n4. Counting total active items..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT 'Banners' as type, COUNT(*) as count FROM promotional_banner WHERE is_active = true UNION ALL SELECT 'Service Features', COUNT(*) FROM service_feature WHERE is_active = true UNION ALL SELECT 'Testimonials', COUNT(*) FROM testimonial WHERE is_active = true;\" 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "If counts are 0, data needs to be seeded"
+puts "=========================================="

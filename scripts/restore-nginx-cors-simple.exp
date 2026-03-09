@@ -1,0 +1,97 @@
+#!/usr/bin/expect -f
+
+# Restore Nginx CORS handling (simpler approach)
+# Handle OPTIONS directly in Nginx, hide Medusa CORS headers to prevent duplicates
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        
+        # Backup nginx config
+        send "cp nginx/conf.d/medusa.conf nginx/conf.d/medusa.conf.backup\r"
+        expect "# "
+        
+        # Check current config
+        send "echo '=== Current Nginx config structure ==='\r"
+        expect "# "
+        send "grep -n 'location' nginx/conf.d/medusa.conf | head -5\r"
+        expect "# "
+        
+        # Create OPTIONS handler config file
+        send "echo '=== Creating OPTIONS handler config ==='\r"
+        expect "# "
+        send "cat > /tmp/nginx_cors_options.txt << 'EOFMARKER'\r"
+        expect "# "
+        send "    # Handle OPTIONS preflight requests directly (before proxying)\r"
+        expect "# "
+        send "    if (\\\$request_method = OPTIONS) {\r"
+        expect "# "
+        send "      add_header Access-Control-Allow-Origin \\\$http_origin always;\r"
+        expect "# "
+        send "      add_header Access-Control-Allow-Methods \"GET, POST, PUT, PATCH, DELETE, OPTIONS\" always;\r"
+        expect "# "
+        send "      add_header Access-Control-Allow-Headers \"Content-Type, Authorization, Baggage, Sentry-Trace\" always;\r"
+        expect "# "
+        send "      add_header Access-Control-Allow-Credentials \"true\" always;\r"
+        expect "# "
+        send "      add_header Content-Length 0 always;\r"
+        expect "# "
+        send "      add_header Content-Type text/plain always;\r"
+        expect "# "
+        send "      return 204;\r"
+        expect "# "
+        send "    }\r"
+        expect "# "
+        send "EOFMARKER\r"
+        expect "# "
+        
+        # Insert before location block
+        send "sed -i '/location \\//r /tmp/nginx_cors_options.txt' nginx/conf.d/medusa.conf\r"
+        expect "# "
+        
+        # Add CORS headers in location block
+        send "echo '=== Adding CORS headers in location block ==='\r"
+        expect "# "
+        send "sed -i '/proxy_set_header X-Forwarded-Proto/a\\    proxy_hide_header Access-Control-Allow-Origin;\\    proxy_hide_header Access-Control-Allow-Credentials;\\    proxy_hide_header Access-Control-Allow-Methods;\\    proxy_hide_header Access-Control-Allow-Headers;\\    add_header Access-Control-Allow-Origin \\\$http_origin always;\\    add_header Access-Control-Allow-Credentials \"true\" always;' nginx/conf.d/medusa.conf\r"
+        expect "# "
+        
+        # Test Nginx config
+        send "echo '=== Testing Nginx configuration ==='\r"
+        expect "# "
+        send "docker exec icfix-nginx nginx -t 2>&1\r"
+        expect "# "
+        
+        # Reload Nginx
+        send "echo '=== Reloading Nginx ==='\r"
+        expect "# "
+        send "docker exec icfix-nginx nginx -s reload 2>&1\r"
+        expect "# "
+        
+        # Test CORS via external endpoint
+        send "echo '=== Testing CORS preflight (OPTIONS) ==='\r"
+        expect "# "
+        send "sleep 2 && curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' -H 'Access-Control-Request-Method: GET' https://icfix.duckdns.org/admin/feature-flags 2>&1 | head -15\r"
+        expect "# "
+        
+        send "exit\r"
+    }
+}
+
+expect eof
+

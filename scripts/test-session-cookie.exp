@@ -1,0 +1,56 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Testing Session Cookie Flow"
+puts "==========================================\n"
+
+# 1. Test login and get full response
+puts "1. Testing login endpoint (full response)..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend curl -s -v -X POST 'http://localhost:9000/auth/user/emailpass' -H 'Content-Type: application/json' -H 'Origin: https://admin.icfix.vn' -d '{\"email\":\"admin@icfix.vn\",\"password\":\"admin123@\"}' 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Test session endpoint
+puts "\n2. Testing session endpoint..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend curl -s -v -X POST 'http://localhost:9000/auth/session' -H 'Content-Type: application/json' -H 'Origin: https://admin.icfix.vn' 2>&1 | head -30"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Check user exists
+puts "\n3. Verifying user exists..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT email FROM \\\"user\\\" WHERE email='admin@icfix.vn' LIMIT 1;\" 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Test Complete"
+puts "=========================================="

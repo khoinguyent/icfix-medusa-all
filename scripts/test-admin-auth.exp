@@ -1,0 +1,34 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+# Check if admin user exists
+puts "Checking admin user in database..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT id, email FROM \"user\" WHERE email='admin@icfix.vn';\""
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check promotional content data
+puts "\nChecking promotional content data..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT COUNT(*) as banner_count FROM promotional_banner; SELECT COUNT(*) as feature_count FROM service_feature; SELECT COUNT(*) as testimonial_count FROM testimonial;\""
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}

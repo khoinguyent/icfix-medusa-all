@@ -1,0 +1,70 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Verifying User and Cookie Issues"
+puts "==========================================\n"
+
+# 1. Check user table structure and find user
+puts "1. Checking user in 'user' table..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT id, email FROM \"user\" WHERE email='admin@icfix.vn' LIMIT 1;\" 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Check auth_identity table
+puts "\n2. Checking auth_identity table..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"SELECT user_id, provider_metadata FROM auth_identity WHERE user_id IN (SELECT id FROM \"user\" WHERE email='admin@icfix.vn') LIMIT 1;\" 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Test login endpoint and check response headers
+puts "\n3. Testing login endpoint to check cookie settings..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend curl -s -i -X POST 'http://localhost:9000/auth/user/emailpass' -H 'Content-Type: application/json' -d '{\"email\":\"admin@icfix.vn\",\"password\":\"admin123@\"}' 2>&1 | grep -iE '(set-cookie|status|http)' | head -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Check backend configuration for cookie settings
+puts "\n4. Checking backend cookie/session configuration..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend cat /app/medusa-config.ts | grep -iE '(cookie|session|cors|domain)' | head -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Analysis Complete"
+puts "=========================================="

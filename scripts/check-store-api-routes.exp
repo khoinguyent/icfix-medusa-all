@@ -1,0 +1,68 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Checking if store API routes exist in backend container..."
+
+# Check if source files exist
+puts "1. Checking source files..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend ls -la /app/src/api/store/homepage-content/route.ts /app/src/api/store/banners/route.ts 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check if compiled files exist
+puts "\n2. Checking compiled files..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend ls -la /app/.medusa/server/src/api/store/homepage-content/route.js /app/.medusa/server/src/api/store/banners/route.js 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# List all store API routes
+puts "\n3. Listing all store API routes..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend find /app/.medusa/server/src/api/store -name 'route.js' 2>&1 | head -20"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Test from inside container
+puts "\n4. Testing API from inside container..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend curl -s http://localhost:9000/store/homepage-content 2>&1 | head -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "If routes don't exist, they need to be deployed"
+puts "=========================================="

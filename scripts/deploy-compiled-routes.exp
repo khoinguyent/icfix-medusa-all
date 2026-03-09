@@ -1,0 +1,86 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Deploying Compiled API Routes"
+puts "==========================================\n"
+
+# 1. Copy compiled routes to server
+puts "1. Copying compiled routes to server..."
+spawn scp -o StrictHostKeyChecking=no /tmp/promotional-routes-compiled.tar.gz ${server_user}@${server_ip}:/tmp/
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Extract into container
+puts "\n2. Extracting routes into container..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend mkdir -p /app/.medusa/server/src/api/admin && docker cp /tmp/promotional-routes-compiled.tar.gz icfix-backend:/tmp/ && docker exec icfix-backend tar -xzf /tmp/promotional-routes-compiled.tar.gz -C /app/.medusa/server/src/api/admin && echo 'Routes extracted successfully'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Verify routes exist
+puts "\n3. Verifying routes are in place..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend ls -la /app/.medusa/server/src/api/admin/promotional-content/banners/route.js 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Restart backend
+puts "\n4. Restarting backend to load routes..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker restart icfix-backend && sleep 15 && echo 'Backend restarted'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 5. Test all endpoints
+puts "\n5. Testing all promotional content endpoints..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "sleep 5 && docker exec icfix-backend sh -c 'for endpoint in banners service-features testimonials homepage-sections; do echo \"Testing \$endpoint:\"; curl -s http://localhost:9000/admin/promotional-content/\$endpoint -w \" Status: %{http_code}\" && echo \"\"; done'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Deployment Complete"
+puts "=========================================="
+puts "\nNote: 401 = Route exists (needs auth)"
+puts "      404 = Route not found"

@@ -1,0 +1,52 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Final verification of admin backend connection..."
+
+# Test health endpoint
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "curl -s https://icfix.duckdns.org/health 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Test admin endpoint with verbose output
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "curl -v https://icfix.duckdns.org/admin/users/me 2>&1 | head -20"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check nginx container status
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker ps | grep nginx && docker logs icfix-nginx --tail 3 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "If health returns 'OK' and admin returns 401,"
+puts "then backend is accessible and admin should work!"
+puts "=========================================="

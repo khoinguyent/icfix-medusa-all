@@ -1,0 +1,259 @@
+#!/usr/bin/expect -f
+
+# Setup SSL Certificate for api.icfix.vn
+# Follows the same pattern as icfix.duckdns.org configuration
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 300
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  SSL Setup for api.icfix.vn"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+# Navigate to project directory
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Step 1: Check current nginx configuration
+puts "\n=== Step 1: Checking Current Nginx Configuration ===\n"
+send "docker exec icfix-nginx cat /etc/nginx/conf.d/medusa.conf 2>/dev/null | head -100\r"
+expect -re "#|\\$"
+
+# Check existing certificates
+puts "\n=== Checking Existing Certificates ===\n"
+send "ls -la ./letsencrypt/live/ 2>/dev/null || echo 'No certificates directory found'\r"
+expect -re "#|\\$"
+
+# Step 2: Check if api.icfix.vn certificate already exists
+puts "\n=== Step 2: Checking for Existing api.icfix.vn Certificate ===\n"
+send "if [ -d ./letsencrypt/live/api.icfix.vn ]; then echo '✅ Certificate already exists'; else echo '❌ Certificate does not exist'; fi\r"
+expect -re "#|\\$"
+
+# Step 3: Get SSL certificate for api.icfix.vn
+puts "\n=== Step 3: Getting SSL Certificate for api.icfix.vn ===\n"
+puts "This may take a few minutes...\n"
+
+# First, ensure nginx is running
+send "docker-compose ps | grep nginx\r"
+expect -re "#|\\$"
+
+# Check if certificate already exists, if not, request it
+send "if [ ! -d ./letsencrypt/live/api.icfix.vn ]; then docker run --rm --network icfix-medusa_icfix-net -v \$(pwd)/letsencrypt:/etc/letsencrypt -v \$(pwd)/certbot/www:/var/www/certbot certbot/certbot certonly --webroot -w /var/www/certbot -d api.icfix.vn --email admin@icfix.vn --agree-tos --no-eff-email --non-interactive 2>&1; else echo 'Certificate already exists, skipping...'; fi\r"
+expect {
+    -re "Successfully received certificate" {
+        puts "\n✅ Certificate obtained successfully\n"
+        exp_continue
+    }
+    -re "Certificate not yet due for renewal" {
+        puts "\n✅ Certificate already exists and is valid\n"
+        exp_continue
+    }
+    -re "An error occurred" {
+        puts "\n❌ Error obtaining certificate\n"
+        exp_continue
+    }
+    -re "already exists" {
+        puts "\n✅ Certificate already exists\n"
+        exp_continue
+    }
+    -re "#|\\$" {
+        # Command completed
+    }
+    timeout {
+        puts "\n⚠️  Certificate request timed out, checking status...\n"
+    }
+}
+
+# Verify certificate was created
+puts "\n=== Verifying Certificate ===\n"
+send "if [ -d ./letsencrypt/live/api.icfix.vn ]; then echo '✅ Certificate files exist'; ls -la ./letsencrypt/live/api.icfix.vn/; else echo '❌ Certificate files not found'; fi\r"
+expect -re "#|\\$"
+
+# Step 4: Read current nginx configuration
+puts "\n=== Step 4: Reading Current Nginx Configuration ===\n"
+send "cat nginx/conf.d/medusa.conf 2>/dev/null | head -200\r"
+expect -re "#|\\$"
+
+# Step 5: Create backup of current nginx config
+puts "\n=== Step 5: Backing Up Current Nginx Configuration ===\n"
+send "if [ -f nginx/conf.d/medusa.conf ]; then cp nginx/conf.d/medusa.conf nginx/conf.d/medusa.conf.backup.\$(date +%Y%m%d_%H%M%S) && echo '✅ Backup created'; else echo 'No medusa.conf found, will create new'; fi\r"
+expect -re "#|\\$"
+
+# Step 6: Ensure nginx/conf.d directory exists
+send "mkdir -p nginx/conf.d && echo '✅ Directory exists'\r"
+expect -re "#|\\$"
+
+# Step 7: Check if api.icfix.vn already exists in config
+puts "\n=== Step 7: Checking if api.icfix.vn Already in Config ===\n"
+send "if grep -q 'server_name api.icfix.vn' nginx/conf.d/medusa.conf 2>/dev/null; then echo '✅ api.icfix.vn already configured'; else echo '❌ api.icfix.vn not found in config'; fi\r"
+expect -re "#|\\$"
+
+# Step 8: Append api.icfix.vn configuration if it doesn't exist
+puts "\n=== Step 8: Adding api.icfix.vn Configuration ===\n"
+send "if ! grep -q 'server_name api.icfix.vn' nginx/conf.d/medusa.conf 2>/dev/null; then cat >> nginx/conf.d/medusa.conf << 'NGINXEOF'
+
+# HTTP redirect for api.icfix.vn
+server {
+    listen 80;
+    server_name api.icfix.vn;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        allow all;
+    }
+
+    location / {
+        return 301 https://\$server_name\$request_uri;
+    }
+}
+
+# HTTPS server for api.icfix.vn
+server {
+    listen 443 ssl http2;
+    server_name api.icfix.vn;
+
+    ssl_certificate /etc/letsencrypt/live/api.icfix.vn/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.icfix.vn/privkey.pem;
+
+    # SSL Security Settings
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Security headers
+    add_header X-Frame-Options \"SAMEORIGIN\" always;
+    add_header X-Content-Type-Options \"nosniff\" always;
+    add_header X-XSS-Protection \"1; mode=block\" always;
+    add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains\" always;
+
+    # CORS headers for admin access
+    add_header Access-Control-Allow-Origin \"https://admin.icfix.vn\" always;
+    add_header Access-Control-Allow-Methods \"GET, POST, PUT, DELETE, OPTIONS\" always;
+    add_header Access-Control-Allow-Headers \"Content-Type, Authorization, X-Requested-With\" always;
+    add_header Access-Control-Allow-Credentials \"true\" always;
+
+    # Handle preflight requests
+    if (\$request_method = OPTIONS) {
+        add_header Access-Control-Allow-Origin \"https://admin.icfix.vn\" always;
+        add_header Access-Control-Allow-Methods \"GET, POST, PUT, DELETE, OPTIONS\" always;
+        add_header Access-Control-Allow-Headers \"Content-Type, Authorization, X-Requested-With\" always;
+        add_header Access-Control-Allow-Credentials \"true\" always;
+        add_header Access-Control-Max-Age 1728000;
+        add_header Content-Type \"text/plain charset=UTF-8\";
+        add_header Content-Length 0;
+        return 204;
+    }
+
+    location / {
+        proxy_pass http://medusa-backend:9000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Port \$server_port;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \"upgrade\";
+
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+NGINXEOF
+echo '✅ api.icfix.vn configuration added'; else echo '⚠️  api.icfix.vn already configured, skipping...'; fi\r"
+expect -re "#|\\$"
+
+# Step 9: Test nginx configuration
+puts "\n=== Step 9: Testing Nginx Configuration ===\n"
+send "docker exec icfix-nginx nginx -t 2>&1\r"
+expect {
+    -re "syntax is ok" {
+        puts "\n✅ Nginx configuration is valid\n"
+        exp_continue
+    }
+    -re "test is successful" {
+        puts "\n✅ Nginx test successful\n"
+        exp_continue
+    }
+    -re "failed" {
+        puts "\n❌ Nginx configuration test failed\n"
+        exp_continue
+    }
+    -re "#|\\$" {}
+}
+
+# Step 10: Reload nginx
+puts "\n=== Step 10: Reloading Nginx ===\n"
+send "docker exec icfix-nginx nginx -s reload 2>&1 && echo '✅ Nginx reloaded' || echo '❌ Nginx reload failed'\r"
+expect -re "#|\\$"
+
+# Step 11: Wait a moment for nginx to reload
+send "sleep 3\r"
+expect -re "#|\\$"
+
+# Step 12: Verify SSL certificate
+puts "\n=== Step 12: Verifying SSL Certificate ===\n"
+send "docker exec icfix-nginx openssl s_client -connect localhost:443 -servername api.icfix.vn </dev/null 2>/dev/null | grep -E '(subject=|issuer=|Verify return code|CN=)' | head -5 || echo 'Cannot test SSL connection'\r"
+expect -re "#|\\$"
+
+# Step 13: Test HTTPS connection
+puts "\n=== Step 13: Testing HTTPS Connection ===\n"
+send "curl -k -I https://api.icfix.vn/health 2>&1 | head -10 || echo 'Cannot test HTTPS connection'\r"
+expect -re "#|\\$"
+
+# Step 14: Verify backend is accessible
+puts "\n=== Step 14: Verifying Backend Accessibility ===\n"
+send "curl -k -s https://api.icfix.vn/health 2>&1 | head -5 || echo 'Backend health check failed'\r"
+expect -re "#|\\$"
+
+puts "\n========================================="
+puts "  SSL Setup Complete"
+puts "=========================================\n"
+puts "✅ api.icfix.vn SSL certificate configured"
+puts "✅ Nginx configuration updated"
+puts "✅ Nginx reloaded"
+puts "\nNext steps:"
+puts "1. Verify https://api.icfix.vn is accessible"
+puts "2. Ensure backend CORS allows https://admin.icfix.vn"
+puts "3. Test admin access to backend\n"
+
+# Close connection
+send "exit\r"
+expect eof
+
+

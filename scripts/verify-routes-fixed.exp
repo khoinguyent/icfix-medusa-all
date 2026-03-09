@@ -1,0 +1,24 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Verifying API routes are now accessible..."
+
+# Test all promotional content endpoints
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend sh -c 'echo \"Testing banners:\" && curl -s http://localhost:9000/admin/promotional-content/banners -w \" Status: %{http_code}\" && echo \"\" && echo \"Testing service-features:\" && curl -s http://localhost:9000/admin/promotional-content/service-features -w \" Status: %{http_code}\" && echo \"\" && echo \"Testing testimonials:\" && curl -s http://localhost:9000/admin/promotional-content/testimonials -w \" Status: %{http_code}\" && echo \"\" && echo \"Testing homepage-sections:\" && curl -s http://localhost:9000/admin/promotional-content/homepage-sections -w \" Status: %{http_code}\" && echo \"\"'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\nNote: 401 (Unauthorized) means route exists but needs authentication"
+puts "404 (Not Found) means route doesn't exist"

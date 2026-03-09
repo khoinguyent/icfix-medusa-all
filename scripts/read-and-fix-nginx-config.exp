@@ -1,0 +1,21 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Reading nginx configuration file..."
+
+# Read the nginx config file
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "cat /root/icfix-medusa/nginx/conf.d/medusa.conf"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}

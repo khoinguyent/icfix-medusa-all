@@ -1,0 +1,66 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Updating backend with cookie domain configuration..."
+
+# 1. Pull latest code
+puts "1. Pulling latest code..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "cd /opt/medusa && git pull origin main 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Add COOKIE_DOMAIN to .env if not exists
+puts "\n2. Adding COOKIE_DOMAIN to .env..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "cd /opt/medusa && grep -q 'COOKIE_DOMAIN' icfix/.env || echo 'COOKIE_DOMAIN=.icfix.vn' >> icfix/.env && echo 'Added COOKIE_DOMAIN' || echo 'COOKIE_DOMAIN already exists'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Rebuild backend
+puts "\n3. Rebuilding backend..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "cd /opt/medusa/icfix && docker exec icfix-backend npm run build 2>&1 | tail -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Restart backend
+puts "\n4. Restarting backend..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker restart icfix-backend && sleep 10 && docker logs icfix-backend --tail 5"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\nBackend updated and restarted!"

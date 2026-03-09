@@ -1,0 +1,128 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        
+        send "echo '========================================'\r"
+        expect "# "
+        send "echo '🔍 Verifying Database Setup and Seed Data'\r"
+        expect "# "
+        send "echo '========================================'\r"
+        expect "# "
+        
+        # Get database credentials from docker-compose or env
+        send "echo ''\r"
+        expect "# "
+        send "echo '📊 1. Checking Database Connection...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c 'SELECT version();' 2>&1 | head -5\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '📋 2. Checking Core Tables...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c \"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY table_name;\" 2>&1 | grep -E '(table_name|product|region|category|store|sales_channel|user|order)' | head -20\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '🛍️  3. Checking Products...'\r"
+        expect "# "
+        send "docker exec icfix-backend npm run seed 2>&1 | tail -5 || docker exec icfix-backend npx medusa exec ./src/scripts/seed.ts 2>&1 | tail -10\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '📦 4. Product Count...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c \"SELECT COUNT(*) as product_count FROM product;\" 2>&1 | grep -E '(product_count|row)'\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '🌍 5. Regions...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c \"SELECT id, name, currency_code FROM region LIMIT 5;\" 2>&1 | grep -E '(id|name|currency|row)'\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '📂 6. Categories...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c \"SELECT id, name, handle FROM product_category LIMIT 5;\" 2>&1 | grep -E '(id|name|handle|row)'\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '🏪 7. Store Configuration...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c \"SELECT id, name, default_currency_code FROM store LIMIT 3;\" 2>&1 | grep -E '(id|name|default_currency|row)'\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '📢 8. Sales Channels...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c \"SELECT id, name FROM sales_channel LIMIT 5;\" 2>&1 | grep -E '(id|name|row)'\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '🎁 9. Promotional Tables...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c \"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('promotional_banner', 'service_feature', 'testimonial', 'homepage_section');\" 2>&1 | grep -E '(table_name|promotional|service|testimonial|homepage)'\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '👤 10. Users/Admins...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c \"SELECT COUNT(*) as user_count FROM \"user\";\" 2>&1 | grep -E '(user_count|row)'\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '📊 11. Migrations Status...'\r"
+        expect "# "
+        send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres printenv POSTGRES_USER) -d \$(docker exec icfix-postgres printenv POSTGRES_DB) -c \"SELECT name, executed_at FROM mikro_orm_migrations ORDER BY executed_at DESC LIMIT 5;\" 2>&1 | grep -E '(name|executed_at|row)'\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '🔧 12. Running Ensure Promotional Tables Script...'\r"
+        expect "# "
+        send "docker exec icfix-backend npx medusa exec ./src/scripts/ensure-promotional-tables.ts 2>&1 | tail -10\r"
+        expect "# "
+        
+        send "echo ''\r"
+        expect "# "
+        send "echo '========================================'\r"
+        expect "# "
+        send "echo '✅ Verification Complete!'\r"
+        expect "# "
+        send "echo '========================================'\r"
+        expect "# "
+        
+        send "exit\r"
+    }
+}
+
+expect eof

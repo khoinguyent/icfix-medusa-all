@@ -1,0 +1,48 @@
+#!/usr/bin/expect -f
+
+set SERVER_IP "116.118.48.209"
+set SERVER_USER "root"
+set SERVER_PASS "46532@Nvc"
+set timeout 30
+
+puts "🔍 Verifying Promotional Content Tables on Server Database"
+puts "📡 Server: $SERVER_USER@$SERVER_IP"
+puts ""
+
+spawn ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP
+
+expect {
+    "password:" {
+        send "$SERVER_PASS\r"
+        expect {
+            "#" {
+                puts "\n✅ Connected to server\n"
+                
+                # Find the correct database user by checking container env
+                puts "Finding database credentials..."
+                send "docker exec icfix-postgres env | grep POSTGRES\r"
+                expect "#"
+                
+                # List all tables
+                puts "\n📋 Listing all tables..."
+                send "docker exec icfix-postgres psql -U \$(docker exec icfix-postgres env | grep POSTGRES_USER | cut -d= -f2) -d \$(docker exec icfix-postgres env | grep POSTGRES_DB | cut -d= -f2) -c \"\\dt\" | grep -E \"(promotional_banner|service_feature|testimonial|homepage_section|List of relations)\"\r"
+                expect "#"
+                
+                # Check each table
+                puts "\n✅ Checking tables:"
+                send "DB_USER=\$(docker exec icfix-postgres env | grep POSTGRES_USER | cut -d= -f2); DB_NAME=\$(docker exec icfix-postgres env | grep POSTGRES_DB | cut -d= -f2); echo \"Using: User=\$DB_USER, DB=\$DB_NAME\"\r"
+                expect "#"
+                
+                send "DB_USER=\$(docker exec icfix-postgres env | grep POSTGRES_USER | cut -d= -f2); DB_NAME=\$(docker exec icfix-postgres env | grep POSTGRES_DB | cut -d= -f2); for tbl in promotional_banner service_feature testimonial homepage_section; do docker exec icfix-postgres psql -U \"\$DB_USER\" -d \"\$DB_NAME\" -c \"\\d \$tbl\" > /dev/null 2>&1 && echo \"✅ \$tbl - EXISTS\" || echo \"❌ \$tbl - MISSING\"; done\r"
+                expect "#"
+                
+                puts "\n📊 Record counts:"
+                send "DB_USER=\$(docker exec icfix-postgres env | grep POSTGRES_USER | cut -d= -f2); DB_NAME=\$(docker exec icfix-postgres env | grep POSTGRES_DB | cut -d= -f2); docker exec icfix-postgres psql -U \"\$DB_USER\" -d \"\$DB_NAME\" -t -c \"SELECT 'promotional_banner' as table_name, COUNT(*) as records FROM promotional_banner UNION ALL SELECT 'service_feature', COUNT(*) FROM service_feature UNION ALL SELECT 'testimonial', COUNT(*) FROM testimonial UNION ALL SELECT 'homepage_section', COUNT(*) FROM homepage_section;\"\r"
+                expect "#"
+                
+                send "exit\r"
+                expect eof
+            }
+        }
+    }
+}

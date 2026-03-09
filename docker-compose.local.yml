@@ -110,17 +110,19 @@ services:
       context: ./icfix-storefront
       dockerfile: Dockerfile.local
       args:
-        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9002
-        - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-pk_43c3b3d995dbe3b2899bfffcb23355936e34f475e99e75e873c7b73349b78330}
+        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://host.docker.internal:9002
+        - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-pk_13737202cec30e25288348d6e39038c0daf31e7fe97ade016c988fd266318be0}
         - NEXT_PUBLIC_DEFAULT_REGION=vn
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
     container_name: medusa-storefront-local
     ports:
       - "3000:3000"  # Access at http://localhost:3000
     environment:
       - NODE_ENV=production
       - REVALIDATE_SECRET=${REVALIDATE_SECRET:-}
-      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9002
-      - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-pk_43c3b3d995dbe3b2899bfffcb23355936e34f475e99e75e873c7b73349b78330}
+      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://medusa-backend-local:9000
+      - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY:-pk_13737202cec30e25288348d6e39038c0daf31e7fe97ade016c988fd266318be0}
       - NEXT_PUBLIC_DEFAULT_REGION=vn
     networks:
       - medusa-network

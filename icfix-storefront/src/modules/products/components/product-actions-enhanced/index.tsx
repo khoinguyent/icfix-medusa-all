@@ -74,7 +74,13 @@ const ProductActionsEnhanced = ({
   }, [product, selectedVariant])
 
   const displayPrice = price?.variantPrice || price?.cheapestPrice
-  const inStock = (selectedVariant?.inventory_quantity ?? 0) > 0
+  // If inventory management is disabled, or backorders are allowed, consider in stock
+  // Otherwise check if inventory quantity > 0
+  const inStock = selectedVariant 
+    ? !selectedVariant.manage_inventory || 
+      selectedVariant.allow_backorder || 
+      (selectedVariant.inventory_quantity ?? 0) > 0
+    : false
 
   // Initialize with first variant's options if available
   useEffect(() => {

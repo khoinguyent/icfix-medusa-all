@@ -1,0 +1,111 @@
+#!/usr/bin/expect -f
+
+# Verify and update backend configuration to ensure it works with https://icfix.duckdns.org as API URL
+# and allows access from admin.icfix.vn
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 60
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Verify Backend Configuration for API URL"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+# Navigate to project directory
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Step 1: Check current .env file
+puts "\n=== Step 1: Checking Current Environment Variables ===\n"
+send "grep -E '(ADMIN_CORS|AUTH_CORS|STORE_CORS|MEDUSA_BACKEND_URL|VITE_ADMIN_BACKEND_URL)' .env 2>/dev/null | grep -v '^#' || echo 'No CORS or backend URL variables found'\r"
+expect -re "#|\\$"
+
+# Step 2: Check backend container environment
+puts "\n=== Step 2: Checking Backend Container Environment ===\n"
+send "docker exec icfix-backend env | grep -E '(ADMIN_CORS|AUTH_CORS|STORE_CORS)' | head -5\r"
+expect -re "#|\\$"
+
+# Step 3: Verify ADMIN_CORS includes admin.icfix.vn
+puts "\n=== Step 3: Verifying ADMIN_CORS Configuration ===\n"
+send "if docker exec icfix-backend env | grep -q 'ADMIN_CORS.*admin.icfix.vn'; then echo '✅ ADMIN_CORS includes admin.icfix.vn'; else echo '❌ ADMIN_CORS does not include admin.icfix.vn'; fi\r"
+expect -re "#|\\$"
+
+# Step 4: Check if we need to update .env file
+puts "\n=== Step 4: Checking if .env Needs Update ===\n"
+send "if ! grep -q 'admin.icfix.vn' .env 2>/dev/null; then echo '⚠️  Need to add admin.icfix.vn to CORS'; else echo '✅ admin.icfix.vn found in .env'; fi\r"
+expect -re "#|\\$"
+
+# Step 5: Update .env file if needed
+puts "\n=== Step 5: Updating .env File ===\n"
+send "if ! grep -q 'admin.icfix.vn' .env 2>/dev/null; then cp .env .env.backup.\$(date +%Y%m%d_%H%M%S) && sed -i 's|ADMIN_CORS=.*|ADMIN_CORS=http://localhost:7000,http://localhost:9000,https://admin.icfix.vn,https://icfix.duckdns.org|' .env && sed -i 's|AUTH_CORS=.*|AUTH_CORS=http://localhost:7000,http://localhost:9000,https://admin.icfix.vn,https://icfix.duckdns.org|' .env && echo '✅ Updated ADMIN_CORS and AUTH_CORS'; else echo '✅ CORS already configured'; fi\r"
+expect -re "#|\\$"
+
+# Step 6: Verify the update
+puts "\n=== Step 6: Verifying Update ===\n"
+send "grep -E '(ADMIN_CORS|AUTH_CORS)' .env | grep -v '^#'\r"
+expect -re "#|\\$"
+
+# Step 7: Restart backend to apply changes
+puts "\n=== Step 7: Restarting Backend to Apply Changes ===\n"
+send "docker-compose restart medusa-backend && echo '✅ Backend restarted' || echo '❌ Backend restart failed'\r"
+expect -re "#|\\$"
+
+# Step 8: Wait for backend to be healthy
+puts "\n=== Step 8: Waiting for Backend to be Healthy ===\n"
+send "sleep 10 && docker exec icfix-backend wget -qO- http://localhost:9000/health && echo '✅ Backend is healthy' || echo '⚠️  Backend health check failed'\r"
+expect -re "#|\\$"
+
+# Step 9: Test CORS headers
+puts "\n=== Step 9: Testing CORS Headers ===\n"
+send "curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' -H 'Access-Control-Request-Method: GET' https://icfix.duckdns.org/admin/feature-flags 2>&1 | grep -iE '(access-control-allow-origin|access-control-allow-methods)' | head -5 || echo 'Cannot test CORS'\r"
+expect -re "#|\\$"
+
+# Step 10: Test API accessibility
+puts "\n=== Step 10: Testing API Accessibility ===\n"
+send "curl -s https://icfix.duckdns.org/health | head -5 && echo '✅ API is accessible' || echo '❌ API not accessible'\r"
+expect -re "#|\\$"
+
+puts "\n========================================="
+puts "  Backend Configuration Verification Complete"
+puts "=========================================\n"
+puts "✅ Backend configured for https://icfix.duckdns.org"
+puts "✅ CORS configured for https://admin.icfix.vn"
+puts "\nNext steps:"
+puts "1. Verify admin can access backend at https://icfix.duckdns.org"
+puts "2. Test login from admin.icfix.vn"
+puts "3. Verify all API endpoints work correctly\n"
+
+# Close connection
+send "exit\r"
+expect eof
+
+

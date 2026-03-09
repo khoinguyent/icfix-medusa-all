@@ -1,0 +1,98 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Fixing Promotional Content API Routes"
+puts "==========================================\n"
+
+# 1. Check if source files exist in container
+puts "1. Checking if API route source files exist..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend ls -la /app/src/api/admin/promotional-content/banners/route.ts 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Check if built files exist
+puts "\n2. Checking if built route files exist..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend ls -la /app/.medusa/server/src/api/admin/promotional-content/banners/route.js 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. If files don't exist, we need to copy them or rebuild
+puts "\n3. Checking if we need to pull latest code..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend sh -c 'cd /app && git status --short 2>&1 | head -5 || echo \"Not a git repo in container\"'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Rebuild backend to compile routes
+puts "\n4. Rebuilding backend to compile API routes..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend npm run build 2>&1 | tail -20"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 5. Restart backend
+puts "\n5. Restarting backend..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker restart icfix-backend && sleep 15 && docker logs icfix-backend --tail 10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 6. Test the API endpoint
+puts "\n6. Testing API endpoint after restart..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "sleep 5 && docker exec icfix-backend curl -s http://localhost:9000/admin/promotional-content/banners -w '\nHTTP Status: %{http_code}\n' 2>&1 | tail -3"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Fix Complete"
+puts "=========================================="

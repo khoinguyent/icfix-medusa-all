@@ -1,0 +1,51 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+set sql_file "scripts/seed-promotional-content.sql"
+
+# First, copy the SQL file to the server
+puts "Copying SQL file to server..."
+spawn scp -o StrictHostKeyChecking=no ${sql_file} ${server_user}@${server_ip}:/tmp/seed-promotional-content.sql
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Now execute the SQL file using psql in the PostgreSQL container
+# Using PGPASSWORD to avoid password prompt
+puts "Executing SQL file on PostgreSQL..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "cat /tmp/seed-promotional-content.sql | docker exec -i icfix-postgres sh -c 'PGPASSWORD=icf1x@dm1n psql -U icfix_admin -d icfix_db'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    "Permission denied" {
+        puts "ERROR: Authentication failed"
+        exit 1
+    }
+    timeout {
+        puts "ERROR: Command timed out"
+        exit 1
+    }
+    eof {
+        catch wait result
+        set exit_code [lindex $result 3]
+        if {$exit_code != 0} {
+            puts "SQL execution completed with exit code: $exit_code"
+        } else {
+            puts "✅ SQL file executed successfully!"
+        }
+        exit $exit_code
+    }
+}

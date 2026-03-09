@@ -1,0 +1,77 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Fixing ACME challenge path and creating SSL..."
+
+# Fix the ACME challenge path in nginx config
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "sed -i 's|location /.well-known/acme-challenge/ {|location ^~ /.well-known/acme-challenge/ {|' /root/icfix-medusa/nginx/conf.d/medusa.conf && sed -i 's|root /var/www/certbot;|alias /var/www/certbot/.well-known/acme-challenge/;|' /root/icfix-medusa/nginx/conf.d/medusa.conf && sed -i '/alias.*certbot/a\    try_files \$uri =404;' /root/icfix-medusa/nginx/conf.d/medusa.conf && echo 'Config fixed'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Reload nginx
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-nginx nginx -s reload 2>&1 || docker restart icfix-nginx"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Test ACME challenge path
+puts "\nTesting ACME challenge path..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "curl -s http://api.icfix.vn/.well-known/acme-challenge/test 2>&1 | head -3"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Create certificate again
+puts "\nCreating SSL certificate..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-certbot certbot certonly --webroot -w /var/www/certbot -d api.icfix.vn --email admin@icfix.vn --agree-tos --no-eff-email --non-interactive 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Verify certificate
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-certbot ls -la /etc/letsencrypt/live/api.icfix.vn/ 2>&1 | head -5"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\nDone!"

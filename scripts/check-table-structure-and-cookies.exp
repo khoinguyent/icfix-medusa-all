@@ -1,0 +1,70 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Checking Table Structure and Cookie Config"
+puts "==========================================\n"
+
+# 1. Check user table structure
+puts "1. User table structure..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"\\d user;\" 2>&1 | head -20"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Check auth_identity table structure
+puts "\n2. Auth identity table structure..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -c \"\\d auth_identity;\" 2>&1 | head -20"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Check medusa-config for cookie domain
+puts "\n3. Checking medusa-config.ts for cookie domain settings..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend cat /app/medusa-config.ts | grep -A 5 -B 5 'cookieSecret' 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Test login with full headers
+puts "\n4. Testing login with full response headers..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend curl -s -v -X POST 'http://localhost:9000/auth/user/emailpass' -H 'Content-Type: application/json' -H 'Origin: https://admin.icfix.vn' -d '{\"email\":\"admin@icfix.vn\",\"password\":\"admin123@\"}' 2>&1 | grep -iE '(set-cookie|cookie|domain|samesite|secure)'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Analysis Complete"
+puts "=========================================="

@@ -1,0 +1,98 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Verifying Promotional Content API Routes"
+puts "==========================================\n"
+
+# 1. Check if source files exist
+puts "1. Checking source files in container..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend find /app/src/api/admin/promotional-content -name 'route.ts' -type f 2>/dev/null | sort"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 2. Check if built files exist
+puts "\n2. Checking built files in .medusa directory..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend find /app/.medusa/server/src/api/admin/promotional-content -name 'route.js' -type f 2>/dev/null | sort"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 3. Check if module exists
+puts "\n3. Checking if promotional content module exists..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend ls -la /app/src/modules/promotional-content/ 2>/dev/null | head -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 4. Test API endpoint directly from container
+puts "\n4. Testing API endpoint from inside container..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend curl -s http://localhost:9000/admin/promotional-content/banners -w '\nHTTP Status: %{http_code}\n' 2>&1 | tail -3"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 5. Check backend logs for route registration
+puts "\n5. Checking backend logs for route registration..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker logs icfix-backend --tail 50 2>&1 | grep -iE '(promotional|route|api|admin)' | tail -10"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# 6. List all admin API routes
+puts "\n6. Listing all admin API routes..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-backend find /app/.medusa/server/src/api/admin -type d -name 'promotional-content' 2>/dev/null && echo 'Route directory found' || echo 'Route directory NOT found'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Verification Complete"
+puts "=========================================="

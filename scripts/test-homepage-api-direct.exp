@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Testing homepage API endpoints with publishable key..."
+
+# Get publishable key
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-postgres psql -U icfix_admin -d icfix_db -t -A -c \"SELECT token FROM api_key WHERE type='publishable' ORDER BY created_at DESC LIMIT 1;\" 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Test homepage-content endpoint
+puts "\n1. Testing /store/homepage-content..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "PUB_KEY=\$(docker exec icfix-postgres psql -U icfix_admin -d icfix_db -t -A -c \"SELECT token FROM api_key WHERE type='publishable' ORDER BY created_at DESC LIMIT 1;\" 2>&1) && curl -s -H \"x-publishable-api-key: \$PUB_KEY\" https://icfix.duckdns.org/store/homepage-content 2>&1 | head -200"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Test banners endpoint
+puts "\n2. Testing /store/banners..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "PUB_KEY=\$(docker exec icfix-postgres psql -U icfix_admin -d icfix_db -t -A -c \"SELECT token FROM api_key WHERE type='publishable' ORDER BY created_at DESC LIMIT 1;\" 2>&1) && curl -s -H \"x-publishable-api-key: \$PUB_KEY\" 'https://icfix.duckdns.org/store/banners?position=hero&is_active=true' 2>&1 | head -100"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "If these return data, API is working"
+puts "If they return errors, check backend"
+puts "=========================================="

@@ -1,0 +1,69 @@
+#!/usr/bin/expect -f
+
+# Remove duplicate OPTIONS handler in Nginx config
+
+set timeout 30
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+spawn ssh -o StrictHostKeyChecking=no "$server_user@$server_ip"
+
+expect {
+    "password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "Password:" {
+        send "$server_pass\r"
+        exp_continue
+    }
+    "# " {
+        send "cd /root/icfix-medusa\r"
+        expect "# "
+        
+        # Show the second OPTIONS handler
+        send "echo '=== Second OPTIONS Handler (line 63) ==='\r"
+        expect "# "
+        send "sed -n '63,75p' nginx/conf.d/medusa.conf\r"
+        expect "# "
+        
+        # Check if it's a duplicate/old one
+        send "echo '=== Checking if second handler is duplicate ==='\r"
+        expect "# "
+        send "sed -n '63,75p' nginx/conf.d/medusa.conf | grep -i 'CORS preflight'\r"
+        expect "# "
+        
+        # If found, remove the old duplicate block (lines 62-75 approximately)
+        send "echo '=== Removing duplicate OPTIONS handler ==='\r"
+        expect "# "
+        # Remove lines from "# --- CORS preflight ---" to the closing brace
+        send "sed -i '/# --- CORS preflight ---/,/^[[:space:]]*}/d' nginx/conf.d/medusa.conf\r"
+        expect "# "
+        
+        # Verify only one OPTIONS handler remains
+        send "echo '=== Verifying OPTIONS handlers ==='\r"
+        expect "# "
+        send "grep -n 'if.*OPTIONS' nginx/conf.d/medusa.conf\r"
+        expect "# "
+        
+        # Test Nginx config
+        send "docker exec icfix-nginx nginx -t\r"
+        expect "# "
+        
+        # Reload if test passes
+        send "docker exec icfix-nginx nginx -s reload\r"
+        expect "# "
+        
+        # Test OPTIONS again
+        send "echo '=== Testing OPTIONS after cleanup ==='\r"
+        expect "# "
+        send "curl -s -i -X OPTIONS -H 'Origin: https://admin.icfix.vn' https://icfix.duckdns.org/admin/feature-flags 2>&1 | head -10\r"
+        expect "# "
+        
+        send "exit\r"
+    }
+}
+
+expect eof
+

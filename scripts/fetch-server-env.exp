@@ -1,0 +1,62 @@
+#!/usr/bin/expect -f
+
+# Fetch server .env file and display it (excluding sensitive passwords)
+
+# Load environment variables
+source [file join [file dirname $argv0] load-env.exp]
+
+set timeout 30
+
+# SSH credentials from environment
+set server_ip $env(SERVER_IP)
+set server_user $env(SERVER_USER)
+set server_pass $env(SERVER_PASS)
+
+puts "\n========================================="
+puts "  Fetching Server .env Configuration"
+puts "=========================================\n"
+
+# Connect to server
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${server_user}@${server_ip}
+expect {
+    "password:" {
+        send "$server_pass\r"
+    }
+    timeout {
+        puts "ERROR: SSH connection timeout"
+        exit 1
+    }
+}
+
+# Wait for shell prompt
+expect {
+    -re "#|\\$" {}
+    timeout {
+        puts "ERROR: Didn't get shell prompt"
+        exit 1
+    }
+}
+
+puts "\n✅ Connected to server\n"
+
+send "cd /root/icfix-medusa\r"
+expect -re "#|\\$"
+
+# Display .env file (excluding sensitive values)
+puts "\n=== Server .env File (sensitive values masked) ===\n"
+
+send "if [ -f .env ]; then cat .env | sed 's/\\(.*=\\).*/\\1***MASKED***/' | grep -v '^#' | grep -v '^$' | head -50; else echo '.env file not found'; fi\r"
+expect -re "#|\\$"
+
+# Get actual values for non-sensitive keys (just the variable names)
+puts "\n=== Environment Variable Names ===\n"
+send "if [ -f .env ]; then grep -v '^#' .env | grep -v '^$' | cut -d= -f1 | sort; else echo '.env file not found'; fi\r"
+expect -re "#|\\$"
+
+puts "\n========================================="
+puts "  Server .env Analysis Complete"
+puts "=========================================\n"
+
+send "exit\r"
+expect eof
+

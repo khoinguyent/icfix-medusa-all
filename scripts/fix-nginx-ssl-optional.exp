@@ -1,0 +1,240 @@
+#!/usr/bin/expect -f
+
+set timeout 120
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Making api.icfix.vn SSL optional (commenting out until cert is created)..."
+
+# Create config without api.icfix.vn HTTPS block (will add after SSL cert is created)
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "cat > /tmp/medusa.conf.temp << 'NGINX_EOF'
+# /etc/nginx/conf.d/medusa.conf
+
+# Upstream to Medusa (service name from docker-compose)
+upstream medusa_backend {
+  server icfix-backend:9000;
+}
+
+
+# HTTP: keep ACME, redirect others to HTTPS
+server {
+  listen 80;
+  server_name icfix.duckdns.org _;
+
+  # ACME challenge (Certbot)
+  location ^~ /.well-known/acme-challenge/ {
+    alias /var/www/certbot/.well-known/acme-challenge/;
+    try_files \$uri =404;
+  }
+
+  return 301 https://\$host\$request_uri;
+}
+
+# HTTPS
+server {
+  listen 443 ssl http2;
+  server_name icfix.duckdns.org;
+
+  # TLS (Let's Encrypt)
+  ssl_certificate     /etc/letsencrypt/live/icfix.duckdns.org/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/icfix.duckdns.org/privkey.pem;
+
+  # Reasonable TLS defaults
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers off;
+  ssl_session_timeout 1d;
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_tickets off;
+
+  # Logs and limits
+  access_log /var/log/nginx/access.log;
+  error_log  /var/log/nginx/error.log warn;
+  client_max_body_size 50m;
+
+  # (Optional) gzip
+  gzip on;
+  gzip_types text/plain text/css application/json application/javascript application/xml+rss application/xml text/javascript image/svg+xml;
+  gzip_min_length 1024;
+
+
+  # Main proxy to Medusa
+  location / {
+    # Handle OPTIONS preflight requests directly (before proxying)
+    if (\$request_method = OPTIONS) {
+      add_header Access-Control-Allow-Origin \$http_origin always;
+      add_header Access-Control-Allow-Methods \"GET, POST, PUT, PATCH, DELETE, OPTIONS\" always;
+      add_header Access-Control-Allow-Headers \"Content-Type, Authorization, Baggage, Sentry-Trace\" always;
+      add_header Access-Control-Allow-Credentials \"true\" always;
+      add_header Content-Length 0 always;
+      add_header Content-Type text/plain always;
+      return 204;
+    }
+
+    # Proxy
+    proxy_pass http://medusa_backend;
+    proxy_http_version 1.1;
+
+    # Forwarded headers (tell app it's behind HTTPS)
+    proxy_set_header Host              \$host;
+    proxy_set_header X-Real-IP         \$remote_addr;
+    proxy_set_header X-Forwarded-For   \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    # Hide CORS headers from backend (prevent duplicates)
+    proxy_hide_header Access-Control-Allow-Origin;
+    proxy_hide_header Access-Control-Allow-Credentials;
+    proxy_hide_header Access-Control-Allow-Methods;
+    proxy_hide_header Access-Control-Allow-Headers;
+    # Add CORS headers from Nginx (single source of truth)
+    add_header Access-Control-Allow-Origin \$http_origin always;
+    add_header Access-Control-Allow-Credentials \"true\" always;
+    proxy_set_header X-Forwarded-Host  \$host;
+    proxy_set_header X-Forwarded-Port  443;
+
+    # WebSocket
+    proxy_set_header Upgrade    \$http_upgrade;
+    proxy_set_header Connection \"upgrade\";
+    proxy_cache_bypass          \$http_upgrade;
+
+
+    # Cookies: nginx 1.29.1 supports this
+    proxy_cookie_flags ~ secure samesite=None;
+
+    # Timeouts
+    proxy_connect_timeout 60s;
+    proxy_send_timeout    60s;
+    proxy_read_timeout    60s;
+  }
+}
+
+# HTTP redirect for api.icfix.vn (for ACME challenge)
+server {
+    listen 80;
+    server_name api.icfix.vn;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        allow all;
+    }
+
+    location / {
+        return 301 https://\$server_name\$request_uri;
+    }
+}
+
+# HTTPS server for api.icfix.vn
+# COMMENTED OUT until SSL certificate is created
+# Uncomment after running: docker exec icfix-certbot certbot certonly --webroot -w /var/www/certbot -d api.icfix.vn --email your-email@example.com --agree-tos --no-eff-email
+# server {
+#     listen 443 ssl http2;
+#     server_name api.icfix.vn;
+# 
+#     ssl_certificate /etc/letsencrypt/live/api.icfix.vn/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/api.icfix.vn/privkey.pem;
+# 
+#     # SSL Security Settings
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers HIGH:!aNULL:!MD5;
+#     ssl_prefer_server_ciphers on;
+# 
+#     # Security headers
+#     add_header X-Frame-Options \"SAMEORIGIN\" always;
+#     add_header X-Content-Type-Options \"nosniff\" always;
+#     add_header X-XSS-Protection \"1; mode=block\" always;
+#     add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains\" always;
+# 
+#     # CORS headers for admin access
+#     location / {
+#         # Handle OPTIONS preflight requests
+#         if (\$request_method = OPTIONS) {
+#             add_header Access-Control-Allow-Origin \"https://admin.icfix.vn\" always;
+#             add_header Access-Control-Allow-Methods \"GET, POST, PUT, DELETE, OPTIONS\" always;
+#             add_header Access-Control-Allow-Headers \"Content-Type, Authorization, X-Requested-With\" always;
+#             add_header Access-Control-Allow-Credentials \"true\" always;
+#             add_header Access-Control-Max-Age 1728000;
+#             add_header Content-Type \"text/plain charset=UTF-8\";
+#             add_header Content-Length 0;
+#             return 204;
+#         }
+# 
+#         # Add CORS headers for all requests
+#         add_header Access-Control-Allow-Origin \"https://admin.icfix.vn\" always;
+#         add_header Access-Control-Allow-Methods \"GET, POST, PUT, DELETE, OPTIONS\" always;
+#         add_header Access-Control-Allow-Headers \"Content-Type, Authorization, X-Requested-With\" always;
+#         add_header Access-Control-Allow-Credentials \"true\" always;
+# 
+#         proxy_pass http://medusa_backend;
+#         proxy_set_header Host \$host;
+#         proxy_set_header X-Real-IP \$remote_addr;
+#         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto \$scheme;
+#         proxy_set_header X-Forwarded-Host \$host;
+#         proxy_set_header X-Forwarded-Port \$server_port;
+# 
+#         # WebSocket support
+#         proxy_http_version 1.1;
+#         proxy_set_header Upgrade \$http_upgrade;
+#         proxy_set_header Connection \"upgrade\";
+# 
+#         # Timeouts
+#         proxy_connect_timeout 60s;
+#         proxy_send_timeout 60s;
+#         proxy_read_timeout 60s;
+#     }
+# }
+NGINX_EOF
+echo 'Config created'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Apply the config
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "cp /tmp/medusa.conf.temp /root/icfix-medusa/nginx/conf.d/medusa.conf && echo 'Config updated'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Restart nginx
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker restart icfix-nginx && sleep 5 && docker logs icfix-nginx --tail 5 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\nTesting connection..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "sleep 3 && curl -s -o /dev/null -w 'HTTP Status: %{http_code}\n' https://icfix.duckdns.org/health 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Nginx should now be working for icfix.duckdns.org"
+puts "api.icfix.vn SSL cert needs to be created"
+puts "=========================================="

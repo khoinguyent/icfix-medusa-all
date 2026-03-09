@@ -1,0 +1,73 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "Checking for nginx in different locations..."
+
+# Check if nginx is running as a container
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker ps | grep nginx"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check if nginx binary exists
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "which nginx || find /usr -name nginx 2>/dev/null | head -5"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check if there's a reverse proxy setup
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker ps -a | grep -E 'proxy|nginx|traefik|caddy'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check port 443 and 80
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "netstat -tlnp 2>/dev/null | grep -E ':(80|443)' || ss -tlnp 2>/dev/null | grep -E ':(80|443)'"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check docker-compose for nginx
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "find /root /home /opt -name 'docker-compose*.yml' -o -name 'docker-compose*.yaml' 2>/dev/null | head -5"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}

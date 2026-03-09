@@ -1,0 +1,57 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server_ip "116.118.48.209"
+set server_user "root"
+set server_pass "46532@Nvc"
+
+puts "=========================================="
+puts "Creating SSL Certificate for api.icfix.vn"
+puts "==========================================\n"
+
+# Check if certbot container is running
+puts "1. Checking certbot container..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker ps | grep certbot"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Create SSL certificate for api.icfix.vn
+puts "\n2. Creating SSL certificate for api.icfix.vn..."
+puts "   (This may take a minute...)"
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-certbot certbot certonly --webroot -w /var/www/certbot -d api.icfix.vn --email admin@icfix.vn --agree-tos --no-eff-email --non-interactive 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+# Check if certificate was created
+puts "\n3. Verifying certificate was created..."
+spawn ssh -o StrictHostKeyChecking=no ${server_user}@${server_ip} "docker exec icfix-certbot ls -la /etc/letsencrypt/live/api.icfix.vn/ 2>&1"
+
+expect {
+    "password:" {
+        send "${server_pass}\r"
+        exp_continue
+    }
+    eof {
+        catch wait result
+    }
+}
+
+puts "\n=========================================="
+puts "Certificate creation complete"
+puts "=========================================="
